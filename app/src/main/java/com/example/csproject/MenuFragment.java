@@ -41,6 +41,7 @@ public class MenuFragment extends Fragment {
                     .remove(this)
                     .commit();
             requireActivity().getSupportFragmentManager().popBackStack();
+                BattleActivity.isMenuOpen = false;
         });
 
         return view;

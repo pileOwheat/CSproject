@@ -248,4 +248,3 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         callback.onMessageReceived("💥 Error: " + t.getMessage());
     }
 }
-

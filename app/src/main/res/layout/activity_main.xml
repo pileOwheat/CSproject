@@ -11,18 +11,21 @@
         android:id="@+id/buttonStartBattle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Battle"
         android:layout_gravity="center"
+        android:text="Start Battle"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
     <Button
         android:id="@+id/buttonJoinSpectator"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
         android:text="Join Random Battle (Spectator)"
-        android:layout_margin="16dp" />
-
+        app:layout_constraintBottom_toTopOf="@+id/buttonStartBattle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

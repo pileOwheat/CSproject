@@ -4,8 +4,10 @@ plugins {
 }
 
 android {
+
     namespace = "com.example.csproject"
     compileSdk = 35
+
 
     defaultConfig {
         applicationId = "com.example.csproject"
@@ -13,9 +15,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
 
     buildTypes {
         release {
@@ -30,6 +32,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    buildFeatures {
+        viewBinding = true
+    }
+
+
 }
 
 dependencies {
