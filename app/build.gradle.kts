@@ -1,10 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")//google play services
 }
 
 android {
     namespace = "com.example.csproject"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.csproject"
@@ -41,12 +42,13 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-
-    // OkHttp for WebSocket
+// OkHttp for WebSocket
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
 // Firebase Realtime Database (using BoM for version management)
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     implementation("com.google.firebase:firebase-database")
+
 // AndroidX Fragments
     implementation ("androidx.fragment:fragment:1.8.6")
 
