@@ -2,28 +2,46 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/rootView">
-
-    <TextView
-        android:id="@+id/battleLog"
-        android:layout_width="377dp"
-        android:layout_height="383dp"
-        android:layout_weight="1"
-        android:scrollbars="vertical"
-        android:text="Battle log will appear here" />
-
-    <Button
-        android:id="@+id/buttonStartSim"
+    <!-- Main UI layer -->
+    <LinearLayout
+        android:id="@+id/battleContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Start Simulation" />
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
 
+        <!-- Example: Battle log and simulation button -->
+
+        <ScrollView
+            android:layout_width="379dp"
+            android:layout_height="650dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/battleLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:text="Battle log will appear here"
+                android:textSize="16sp" />
+        </ScrollView>
+
+        <Button
+            android:id="@+id/buttonStartSim"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Start Battle Simulation" />
+    </LinearLayout>
+
+    <!-- Overlay: Top-left menu icon -->
     <ImageButton
         android:id="@+id/buttonOpenMenu"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_gravity="top|start"
-        android:layout_margin="0dp"
+        android:src="@android:drawable/ic_menu_sort_by_size"
         android:background="@android:color/transparent"
+        android:layout_margin="0dp"
         android:padding="4dp"
-        android:src="@android:drawable/ic_menu_sort_by_size" />
+        android:layout_gravity="top|start" />
+
 </FrameLayout>
