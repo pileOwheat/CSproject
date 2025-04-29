@@ -43,7 +43,12 @@ public class BattleActivity extends AppCompatActivity {
         battleLog = findViewById(R.id.battleLog);
         Button startButton = findViewById(R.id.buttonStartSim);
 
+        // Create the WebSocket client and define how to display messages
+        showdownClient = new ShowdownWebSocketClient(message ->
+                runOnUiThread(() -> battleLog.append("\n" + message))
+        );
 
+        startButton.setOnClickListener(v -> showdownClient.connect());
 
         View root = findViewById(R.id.rootView);
         if (root != null) {
