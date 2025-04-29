@@ -1,19 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    android:id="@+id/rootView"
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:id="@+id/rootView">
 
     <TextView
         android:id="@+id/battleLog"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="377dp"
+        android:layout_height="383dp"
         android:layout_weight="1"
-        android:text="Battle log will appear here"
-        android:scrollbars="vertical" />
+        android:scrollbars="vertical"
+        android:text="Battle log will appear here" />
 
     <Button
         android:id="@+id/buttonStartSim"
@@ -21,10 +17,13 @@
         android:layout_height="wrap_content"
         android:text="Start Simulation" />
 
-    <fragment
-        android:id="@+id/battleFragment"
-        android:name="com.example.csproject.BattleFragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-</LinearLayout>
+    <ImageButton
+        android:id="@+id/buttonOpenMenu"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="0dp"
+        android:background="@android:color/transparent"
+        android:padding="4dp"
+        android:src="@android:drawable/ic_menu_sort_by_size" />
+</FrameLayout>

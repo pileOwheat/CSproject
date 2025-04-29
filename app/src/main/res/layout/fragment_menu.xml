@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/menuSidebar"
+    android:layout_width="280dp"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#AA000000"
+    android:padding="24dp"
+    android:layout_gravity="start"
+    android:elevation="8dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Menu"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/buttonBackToMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Back to Main Menu"
+        android:background="@android:color/transparent"
+        />
+
+    <Button
+        android:id="@+id/buttonSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:color="#FF000000"
+        android:text="Settings"
+        android:textColor="@android:color/white"
+        android:background="@android:color/transparent"
+        />
+
+    <Button
+        android:id="@+id/buttonCloseMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Close Menu"
+        android:background="@android:color/transparent"
+        />
+
+</LinearLayout>
