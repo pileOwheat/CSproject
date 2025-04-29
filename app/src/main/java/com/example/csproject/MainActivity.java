@@ -31,10 +31,14 @@ public class MainActivity extends AppCompatActivity {
         startButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, BattleActivity.class);
             startActivity(intent);
+        });
 
-
-
-
+        //intent for join spectator button
+        Button joinSpectatorButton = findViewById(R.id.buttonJoinSpectator);
+        joinSpectatorButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, BattleActivity.class);
+            intent.putExtra("spectator_mode", true); // flag that will be checked in battleActivity
+            startActivity(intent);
         });
 
 

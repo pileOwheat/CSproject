@@ -1,5 +1,6 @@
 package com.example.csproject;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -41,15 +42,7 @@ public class BattleActivity extends AppCompatActivity {
         setContentView(R.layout.activity_battle);
 
         battleLog = findViewById(R.id.battleLog);
-        Button startButton = findViewById(R.id.buttonStartSim);
-        Button joinButton = findViewById(R.id.buttonJoinRandom);
 
-        //joinbutton functionality- joins a random gen 8 battle
-        joinButton.setOnClickListener(v -> {
-            if (showdownClient != null) {
-                showdownClient.send("|/cmd roomlist");
-            }
-        });
 
 
         // Create the WebSocket client and define how to display messages
@@ -57,7 +50,17 @@ public class BattleActivity extends AppCompatActivity {
                 runOnUiThread(() -> battleLog.append("\n" + message))
         );
 
-        startButton.setOnClickListener(v -> showdownClient.connect());
+        // Connect to Pokémon Showdown to the client
+        showdownClient.connect();
+
+        // Check if we're in spectator mode to know what to request from the showdown api.
+        Intent intent = getIntent();
+        boolean spectatorMode = intent.getBooleanExtra("spectator_mode", false);
+
+        if (spectatorMode) {
+            showdownClient.send("|/cmd roomlist"); // immediately triggers auto-join logic
+        }
+
 
         View root = findViewById(R.id.rootView);
         if (root != null) {
