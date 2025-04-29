@@ -10,13 +10,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.WebSocket;
-import okhttp3.WebSocketListener;
 
 public class BattleActivity extends AppCompatActivity {
     private ScrollView scrollLog;
@@ -24,7 +18,7 @@ public class BattleActivity extends AppCompatActivity {
     private FrameLayout controlsContainer;
     private View viewControls;
     private View viewFightOpts, viewPartyOpts;
-    private WebSocket socket;
+    private ShowdownWebSocketClient socketClient;
 
     public static boolean isMenuOpen = false;
 
@@ -84,6 +78,11 @@ public class BattleActivity extends AppCompatActivity {
         });
     }
 
+    private void setupMoveButtons(){
+
+    }
+
+
 
     private void showMenuFragment() {
         MenuFragment menuFragment = new MenuFragment();
@@ -97,8 +96,7 @@ public class BattleActivity extends AppCompatActivity {
 
     public void closeMenuFragment() {
         Fragment frag = getSupportFragmentManager().findFragmentById(R.id.menuFragmentContainer);
-        if (frag !=
-                null) {
+        if (frag != null) {
             getSupportFragmentManager().beginTransaction().remove(frag).commit();
         }
         findViewById(R.id.menuFragmentContainer).setVisibility(View.GONE);
@@ -115,34 +113,18 @@ public class BattleActivity extends AppCompatActivity {
     }
 
     private void initWebSocket() {
-        OkHttpClient client = new OkHttpClient.Builder()
-                .hostnameVerifier((hostname, session) -> hostname.equals("sim3.psim.us"))
-                .build();
-        Request request = new Request.Builder()
-                .url("wss://sim3.psim.us/showdown/websocket")
-                .build();
-        socket = client.newWebSocket(request, new ShowdownWebSocketListener());
+        socketClient = new ShowdownWebSocketClient(message -> runOnUiThread(() -> {
+            battleLog.append(message + "\n");
+            scrollLog.fullScroll(View.FOCUS_DOWN);
+        }));
+        socketClient.connect();
     }
 
-    private class ShowdownWebSocketListener extends WebSocketListener {
-        @Override
-        public void onOpen(WebSocket webSocket, okhttp3.Response response) {
-            webSocket.send("|/utm randomBattle," + getTeamExport() + "\n");
-            webSocket.send("|/search randomBattle\n");
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (socketClient != null) {
+            socketClient.close();
         }
-
-        @Override
-        public void onMessage(WebSocket webSocket, String text) {
-            runOnUiThread(() -> battleLog.append(text + "\n"));
-        }
-
-        @Override
-        public void onFailure(WebSocket webSocket, Throwable t, okhttp3.Response response) {
-            runOnUiThread(() -> battleLog.append("Error: " + t.getMessage()));
-        }
-    }
-
-    private String getTeamExport() {
-        return "<YOUR SHOWDOWN TEAM TEXT>";
     }
 }

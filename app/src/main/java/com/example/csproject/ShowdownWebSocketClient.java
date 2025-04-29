@@ -99,7 +99,6 @@ public class ShowdownWebSocketClient extends WebSocketListener {
             }
 
 
-
             // ✅ BATTLE EVENT PARSING
             if (line.contains("|turn|")) {
                 String turnNum = line.split("\\|")[2];
