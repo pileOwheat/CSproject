@@ -4,46 +4,60 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Top-left menu button -->
-    <ImageButton
-        android:id="@+id/buttonOpenMenu"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_margin="8dp"
-        android:layout_gravity="top|start"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Open Menu"
-        android:src="@android:drawable/ic_menu_sort_by_size" />
-
-    <!-- Scrollable battle log below menu button -->
-    <ScrollView
-        android:id="@+id/scrollLogContainer"
+    <!-- Main content container -->
+    <LinearLayout
+        android:id="@+id/mainContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="64dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/battleLog"
+        <!-- Top-left menu button -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingBottom="16dp"
-            android:textAppearance="?android:textAppearanceMedium"
-            android:textColor="#000000"/>
-    </ScrollView>
+            android:layout_height="wrap_content">
 
-    <!-- Bottom controls (Fight, Party, etc) -->
-    <FrameLayout
-        android:id="@+id/controlsContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom" />
+            <ImageButton
+                android:id="@+id/buttonOpenMenu"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_margin="8dp"
+                android:layout_gravity="top|start"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Open Menu"
+                android:src="@android:drawable/ic_menu_sort_by_size" />
+        </FrameLayout>
+
+        <!-- Battle log that resizes dynamically -->
+        <ScrollView
+            android:id="@+id/scrollLogContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp">
+
+            <TextView
+                android:id="@+id/battleLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="16dp"
+                android:textAppearance="?android:textAppearanceMedium"
+                android:textColor="#000000"/>
+        </ScrollView>
+
+        <!-- Controls shown at bottom -->
+        <FrameLayout
+            android:id="@+id/controlsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
 
     <!-- Overlay for menu fragment -->
     <FrameLayout
         android:id="@+id/menuFragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"/>
+        android:visibility="gone">
+
+    </FrameLayout>
 </FrameLayout>

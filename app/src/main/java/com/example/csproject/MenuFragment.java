@@ -30,6 +30,7 @@ public class MenuFragment extends Fragment {
         btnMain.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), MainActivity.class);
             startActivity(intent);
+            BattleActivity.isMenuOpen = false;
         });
 
         btnSettings.setOnClickListener(v -> {
