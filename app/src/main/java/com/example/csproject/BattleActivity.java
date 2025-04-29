@@ -13,14 +13,37 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+
 
 public class BattleActivity extends AppCompatActivity {
+
+    TextView battleLog;
+    ShowdownWebSocketClient showdownClient;
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (showdownClient != null) {
+            showdownClient.close();
+        }
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_battle);
+
+        battleLog = findViewById(R.id.battleLog);
+        Button startButton = findViewById(R.id.buttonStartSim);
+
+
 
         View root = findViewById(R.id.rootView);
         if (root != null) {
