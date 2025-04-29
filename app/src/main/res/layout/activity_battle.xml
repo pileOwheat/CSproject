@@ -9,6 +9,11 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp">
+        <Button
+            android:id="@+id/buttonJoinRandom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Join Random Battle (Spectator)" />
 
         <!-- Example: Battle log and simulation button -->
 

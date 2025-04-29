@@ -42,6 +42,15 @@ public class BattleActivity extends AppCompatActivity {
 
         battleLog = findViewById(R.id.battleLog);
         Button startButton = findViewById(R.id.buttonStartSim);
+        Button joinButton = findViewById(R.id.buttonJoinRandom);
+
+        //joinbutton functionality- joins a random gen 8 battle
+        joinButton.setOnClickListener(v -> {
+            if (showdownClient != null) {
+                showdownClient.send("|/cmd roomlist");
+            }
+        });
+
 
         // Create the WebSocket client and define how to display messages
         showdownClient = new ShowdownWebSocketClient(message ->
