@@ -12,16 +12,20 @@
 
         <Button
             android:id="@+id/move1"
+            android:tag="1"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Move1" />
+            android:text="Move 1" />
+
         <Button
             android:id="@+id/move2"
+            android:tag="2"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Move2" />
+            android:text="Move 2" />
+
     </LinearLayout>
 
     <LinearLayout
@@ -32,16 +36,26 @@
 
         <Button
             android:id="@+id/move3"
+            android:tag="3"
+            android:text="Move 3"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="Move3" />
+            android:layout_height="wrap_content">
+
+        </Button>
+
         <Button
             android:id="@+id/move4"
+            android:tag="4"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="Move4" />
+            android:text="Move 4"
+            android:layout_height="wrap_content">
+
+
+
+        </Button>
+
     </LinearLayout>
 
     <Button

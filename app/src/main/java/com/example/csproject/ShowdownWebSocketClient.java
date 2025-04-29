@@ -1,16 +1,8 @@
 package com.example.csproject;
 
 import android.util.Log;
-
 import okhttp3.*;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class ShowdownWebSocketClient extends WebSocketListener {
 
@@ -21,6 +13,7 @@ public class ShowdownWebSocketClient extends WebSocketListener {
     private WebSocket webSocket;
     private final OkHttpClient client;
     private final MessageCallback callback;
+    private String battleRoomId = null; // Track the active battle room
 
     public ShowdownWebSocketClient(MessageCallback callback) {
         this.callback = callback;
@@ -33,13 +26,21 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         Request request = new Request.Builder()
                 .url("wss://sim3.psim.us/showdown/websocket")
                 .build();
-
         client.newWebSocket(request, this);
     }
 
     public void send(String message) {
         if (webSocket != null) {
-            webSocket.send(message);
+            // If the message is a command and we're in a battle room, prepend the room ID
+            if (message.startsWith("/")) {
+                if (battleRoomId != null) {
+                    webSocket.send(battleRoomId + "|" + message);
+                } else {
+                    callback.onMessageReceived("⚠️ Not currently in a battle room.");
+                }
+            } else {
+                webSocket.send(message);
+            }
         }
     }
 
@@ -54,188 +55,129 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         this.webSocket = webSocket;
         callback.onMessageReceived("✅ Connected to Pokémon Showdown");
         webSocket.send("|/cmd roomlist");
+        webSocket.send("|/utm null");
+        webSocket.send("|/trn guest,0"); // Join as guest
+        webSocket.send("|/search gen8randombattle");
     }
 
     @Override
     public void onMessage(WebSocket webSocket, String text) {
         String[] lines = text.split("\n");
-        Log.i("WebSocket", "RAW: " + text);
+        String currentRoom = null;
 
-        for (String line : lines) {
-            if (line.trim().isEmpty()) continue;
+        for (String rawLine : lines) {
+            if (rawLine.isEmpty()) continue;
 
-            //callback.onMessageReceived("🔎 RAW roomlist message:\n" + line); - for testing
-            if (line.startsWith("|queryresponse|roomlist|")) {
-                try {
-                    int jsonStart = line.indexOf("|roomlist|") + "|roomlist|".length();
-                    String jsonText = line.substring(jsonStart).trim();
-
-                    JSONObject json = new JSONObject(jsonText);
-                    JSONObject rooms = json.getJSONObject("rooms");
-
-                    List<String> roomNames = new ArrayList<>();
-
-                    Iterator<String> keys = rooms.keys();
-                    while (keys.hasNext()) {
-                        String roomName = keys.next();
-                        if (roomName.startsWith("battle-")) {
-                            roomNames.add(roomName);
-                        }
-                    }
-
-                    if (!roomNames.isEmpty()) {
-                        String selectedRoom = roomNames.get(0);
-                        webSocket.send("|/join " + selectedRoom);
-                        callback.onMessageReceived("🧭 Joining random room: " + selectedRoom);
-                    } else {
-                        callback.onMessageReceived("⚠ No active battle rooms found.");
-                    }
-
-                } catch (Exception e) {
-                    callback.onMessageReceived("💥 Failed to parse room list: " + e.getMessage());
-                }
-
-                return;
+            // Room ID is prefixed before the first '|', e.g., ">battle-gen8randombattle-12345"
+            if (rawLine.startsWith(">")) {
+                currentRoom = rawLine.substring(1).trim();
+                continue;
             }
 
+            // Avoid leading pipes and split on '|'
+            String line = rawLine.trim();
+            if (line.startsWith("|")) {
+                line = line.replaceAll("^\\|+", "");
+            }
 
-            // ✅ BATTLE EVENT PARSING
-            if (line.contains("|turn|")) {
-                String turnNum = line.split("\\|")[2];
-                callback.onMessageReceived("\n🔁 Turn " + turnNum);
-            } else if (line.contains("|move|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String attacker = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String move = parts[3];
-                    String target = parts.length > 4 ? parts[4].replace("p1a: ", "").replace("p2a: ", "") : "";
+            String[] parts = line.split("\\|");
+            if (parts.length == 0) continue;
+
+            String cmd = parts[0];
+
+            switch (cmd) {
+                case "init":
+                    // Battle initialization
+                    if (currentRoom != null && currentRoom.startsWith("battle-")) {
+                        battleRoomId = currentRoom;
+                        callback.onMessageReceived("⚔️ Joined battle: " + battleRoomId);
+                    }
+                    break;
+
+                case "turn":
+                    callback.onMessageReceived("\n🔁 Turn " + parts[1]);
+                    break;
+
+                case "move":
+                    String attacker = parts[1].replaceAll("p\\d[a]?: ?", "");
+                    String move = parts[2];
+                    String target = (parts.length > 3) ? parts[3].replaceAll("p\\d[a]?: ?", "") : "";
                     callback.onMessageReceived("⚡ " + attacker + " used " + move + (target.isEmpty() ? "" : " on " + target) + "!");
-                }
-            } else if (line.contains("|-fail|")) {
-                String[] parts = line.split("\\|");
-                String failed = (parts.length >= 3) ? parts[2].replace("p1a: ", "").replace("p2a: ", "") : "Something";
-                callback.onMessageReceived("🚫 " + failed + "'s move failed!");
-            } else if (line.contains("|-immune|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    callback.onMessageReceived("🛡️ " + target + " is immune!");
-                }
-            } else if (line.contains("|-miss|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
-                    String attacker = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    callback.onMessageReceived("❌ " + attacker + "'s move missed!");
-                }
-            } else if (line.contains("|-crit|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    callback.onMessageReceived("💥 Critical hit on " + target + "!");
-                }
-            } else if (line.contains("|-supereffective|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    callback.onMessageReceived("🔥 It's super effective on " + target + "!");
-                }
-            } else if (line.contains("|-resisted|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    callback.onMessageReceived("🛡️ The attack was not very effective on " + target + "!");
-                }
-            } else if (line.contains("|-damage|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String hpStatus = parts[3];
-                    callback.onMessageReceived("💥 " + target + " took damage! HP: " + hpStatus);
-                }
-            } else if (line.contains("|-heal|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String hpStatus = parts[3];
-                    callback.onMessageReceived("❤️ " + target + " healed. HP: " + hpStatus);
-                }
-            } else if (line.contains("|-status|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String status = parts[3];
-                    callback.onMessageReceived("🧪 " + target + " is now " + status.toUpperCase() + "!");
-                }
-            } else if (line.contains("|-curestatus|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String status = parts[3];
-                    callback.onMessageReceived("🧼 " + target + " was cured of " + status.toUpperCase() + "!");
-                }
-            } else if (line.contains("|-boost|") || line.contains("|-unboost|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 5) {
-                    String target = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String stat = parts[3];
-                    String amount = parts[4];
-                    String direction = line.contains("-boost") ? "rose" : "fell";
-                    callback.onMessageReceived("📈 " + target + "'s " + stat + " " + direction + " by " + amount + "!");
-                }
-            } else if (line.contains("|-item|") || line.contains("|-enditem|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String user = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String item = parts[3];
-                    String event = line.contains("|-enditem|") ? "consumed" : "revealed";
-                    callback.onMessageReceived("🎁 " + user + " " + event + " item: " + item);
-                }
-            } else if (line.contains("|-ability|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String user = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String ability = parts[3];
-                    callback.onMessageReceived("🧠 " + user + "'s ability activated: " + ability + "!");
-                }
-            } else if (line.contains("|-weather|")) {
-                String weather = line.split("\\|")[2];
-                callback.onMessageReceived("☁ Weather: " + weather);
-            } else if (line.contains("|-mega|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String user = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String form = parts[3];
-                    callback.onMessageReceived("✨ " + user + " Mega Evolved into " + form + "!");
-                }
-            } else if (line.contains("|-terastallize|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 4) {
-                    String user = parts[2].replace("p1a: ", "").replace("p2a: ", "");
-                    String type = parts[3];
-                    callback.onMessageReceived("💎 " + user + " Terastallized into " + type + " type!");
-                }
-            } else if (line.contains("|switch|")) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
-                    String trainer = parts[2].startsWith("p1a:") ? "Player 1" : "Player 2";
-                    String pokemon = parts[2].replace("p1a: ", "").replace("p2a: ", "").split(",")[0];
-                    callback.onMessageReceived("🔄 " + trainer + " switched to " + pokemon + "!");
-                }
-            } else if (line.contains("|faint|")) {
-                String fainted = line.split("\\|")[2].replace("p1a: ", "").replace("p2a: ", "");
-                callback.onMessageReceived("💀 " + fainted + " fainted!");
-            } else if (line.contains("|win|")) {
-                String winner = line.split("\\|")[2];
-                callback.onMessageReceived("\n🏆 " + winner + " wins the battle!");
-            } else if (line.startsWith("|")) {
-                // Fallback for any other Showdown protocol messages
-                callback.onMessageReceived("• " + line.replace("|", " | "));
+                    break;
+
+                case "-fail":
+                    callback.onMessageReceived("🚫 " + parts[1] + "'s move failed!");
+                    break;
+
+                case "-immune":
+                    callback.onMessageReceived("🛡️ " + parts[1] + " is immune!");
+                    break;
+
+                case "-miss":
+                    callback.onMessageReceived("❌ " + parts[1] + "'s move missed!");
+                    break;
+
+                case "-crit":
+                    callback.onMessageReceived("💥 Critical hit on " + parts[1] + "!");
+                    break;
+
+                case "-supereffective":
+                    callback.onMessageReceived("🔥 It's super effective on " + parts[1] + "!");
+                    break;
+
+                case "-resisted":
+                    callback.onMessageReceived("🛡️ The attack was not very effective on " + parts[1] + "!");
+                    break;
+
+                case "-damage":
+                    callback.onMessageReceived("💥 " + parts[1] + " took damage! HP: " + (parts.length > 2 ? parts[2] : ""));
+                    break;
+
+                case "-heal":
+                    callback.onMessageReceived("❤️ " + parts[1] + " healed. HP: " + (parts.length > 2 ? parts[2] : ""));
+                    break;
+
+                case "-status":
+                    callback.onMessageReceived("🧪 " + parts[1] + " is now " + parts[2].toUpperCase() + "!");
+                    break;
+
+                case "-curestatus":
+                    callback.onMessageReceived("🧼 " + parts[1] + " was cured of " + parts[2].toUpperCase() + "!");
+                    break;
+
+                case "-boost":
+                case "-unboost":
+                    String stat = parts[2];
+                    String amt = parts[3];
+                    String dir = cmd.equals("-boost") ? "rose" : "fell";
+                    callback.onMessageReceived("📈 " + parts[1] + "'s " + stat + " " + dir + " by " + amt + "!");
+                    break;
+
+                case "switch":
+                    String[] sw = parts[1].split(",");
+                    callback.onMessageReceived("🔄 Switched to " + sw[0] + "!");
+                    break;
+
+                case "faint":
+                    callback.onMessageReceived("💀 " + parts[1] + " fainted!");
+                    break;
+
+                case "win":
+                    callback.onMessageReceived("\n🏆 " + parts[1] + " wins the battle!");
+                    break;
+
+                case "upkeep":
+                    // Ignore or optionally show a turn transition
+                    break;
+
+                default:
+                    // General fallback, avoid spammy output
+                    if (!cmd.isEmpty()) {
+                        callback.onMessageReceived("• " + String.join(" | ", parts));
+                    }
             }
         }
     }
-
-
-
 
     @Override
     public void onClosing(WebSocket webSocket, int code, String reason) {
