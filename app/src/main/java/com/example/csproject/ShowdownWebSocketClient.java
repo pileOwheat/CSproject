@@ -1,191 +1,205 @@
+// ShowdownWebSocketClient.java
 package com.example.csproject;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+
 import okhttp3.*;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ShowdownWebSocketClient extends WebSocketListener {
+    public interface MessageCallback { void onMessageReceived(String msg); }
 
-    public interface MessageCallback {
-        void onMessageReceived(String message);
-    }
-
-    private WebSocket webSocket;
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private final OkHttpClient client;
     private final MessageCallback callback;
-    private String battleRoomId = null; // Track the active battle room
+    private WebSocket webSocket;
+
+    private String battleRoomId;
+    private JSONObject lastRequestJson;
 
     public ShowdownWebSocketClient(MessageCallback callback) {
         this.callback = callback;
-        this.client = new OkHttpClient.Builder()
+        this.client   = new OkHttpClient.Builder()
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 .build();
     }
 
+    /** Connect to sim3.psim.us */
     public void connect() {
-        Request request = new Request.Builder()
+        Request req = new Request.Builder()
                 .url("wss://sim3.psim.us/showdown/websocket")
                 .build();
-        client.newWebSocket(request, this);
+        client.newWebSocket(req, this);
     }
 
-    public void send(String message) {
-        if (webSocket != null) {
-            // If the message is a command and we're in a battle room, prepend the room ID
-            if (message.startsWith("/")) {
-                if (battleRoomId != null) {
-                    webSocket.send(battleRoomId + "|" + message);
-                } else {
-                    callback.onMessageReceived("⚠️ Not currently in a battle room.");
-                }
-            } else {
-                webSocket.send(message);
-            }
-        }
-    }
-
+    /** Clean-up */
     public void close() {
-        if (webSocket != null) {
-            webSocket.close(1000, "Closed by user");
+        handler.removeCallbacksAndMessages(null);
+        if (webSocket != null) webSocket.close(1000, "User closed");
+    }
+
+    /** Send a slash command (auto–prefixed) or raw text */
+    public void send(String msg) {
+        if (webSocket == null) return;
+        if (msg.startsWith("/")) {
+            if (battleRoomId != null) webSocket.send(battleRoomId + "|" + msg);
+            else callback.onMessageReceived("⚠️ Not in a battle yet.");
+        } else {
+            webSocket.send(msg);
         }
     }
 
-    @Override
-    public void onOpen(WebSocket webSocket, Response response) {
-        this.webSocket = webSocket;
-        callback.onMessageReceived("✅ Connected to Pokémon Showdown");
-        webSocket.send("|/cmd roomlist");
-        webSocket.send("|/utm null");
-        webSocket.send("|/trn guest,0"); // Join as guest
-        webSocket.send("|/search gen8randombattle");
+    /** Expose last request JSON so UI can refresh on demand */
+    public JSONObject getLastRequestJson() {
+        return lastRequestJson;
     }
 
     @Override
-    public void onMessage(WebSocket webSocket, String text) {
+    public void onOpen(WebSocket ws, Response resp) {
+        this.webSocket = ws;
+        callback.onMessageReceived("✅ Connected to Showdown");
+
+        // 1) Login as guest
+        String guest = "guest" + (int)(Math.random() * 10000);
+        ws.send("|/trn " + guest + ",0");
+
+        // 2) Immediately search—no waiting on updateuser
+        ws.send("|/search gen8randombattle");
+        // schedule retry every 10s until matched
+        handler.postDelayed(this::retrySearch, 10_000);
+    }
+
+    @Override
+    public void onMessage(WebSocket ws, String text) {
         String[] lines = text.split("\n");
         String currentRoom = null;
 
-        for (String rawLine : lines) {
-            if (rawLine.isEmpty()) continue;
-
-            // Room ID is prefixed before the first '|', e.g., ">battle-gen8randombattle-12345"
-            if (rawLine.startsWith(">")) {
-                currentRoom = rawLine.substring(1).trim();
+        for (String raw : lines) {
+            if (raw.startsWith(">")) {
+                currentRoom = raw.substring(1).trim();
                 continue;
             }
+            String line = raw.trim();
+            if (line.isEmpty()) continue;
+            if (line.startsWith("|")) line = line.substring(1);
 
-            // Avoid leading pipes and split on '|'
-            String line = rawLine.trim();
-            if (line.startsWith("|")) {
-                line = line.replaceAll("^\\|+", "");
-            }
+            String[] p = line.split("\\|", -1);
+            if (p.length == 0) continue;
 
-            String[] parts = line.split("\\|");
-            if (parts.length == 0) continue;
+            switch (p[0]) {
+                case "updateSearch":
+                    // matched
+                    Matcher m = Pattern.compile("\"(battle-[^\"}]+)\"").matcher(line);
+                    if (m.find()) {
+                        battleRoomId = m.group(1);
+                        callback.onMessageReceived("⚔️ Matched: " + battleRoomId);
+                        ws.send("|/join " + battleRoomId);
+                        handler.removeCallbacksAndMessages(null);
+                    }
+                    break;
 
-            String cmd = parts[0];
-
-            switch (cmd) {
                 case "init":
-                    // Battle initialization
+                    // join confirmation
                     if (currentRoom != null && currentRoom.startsWith("battle-")) {
                         battleRoomId = currentRoom;
-                        callback.onMessageReceived("⚔️ Joined battle: " + battleRoomId);
+                        callback.onMessageReceived("⚔️ Joined: " + battleRoomId);
+                        handler.removeCallbacksAndMessages(null);
+                    }
+                    break;
+
+                case "request":
+                    // capture JSON for party UI
+                    try {
+                        lastRequestJson = new JSONObject(line.substring("request|".length()));
+                    } catch (JSONException e) {
+                        Log.e("ShowdownClient", "request JSON error", e);
                     }
                     break;
 
                 case "turn":
-                    callback.onMessageReceived("\n🔁 Turn " + parts[1]);
+                    callback.onMessageReceived("\n🔁 Turn " + p[1]);
                     break;
 
-                case "move":
-                    String attacker = parts[1].replaceAll("p\\d[a]?: ?", "");
-                    String move = parts[2];
-                    String target = (parts.length > 3) ? parts[3].replaceAll("p\\d[a]?: ?", "") : "";
-                    callback.onMessageReceived("⚡ " + attacker + " used " + move + (target.isEmpty() ? "" : " on " + target) + "!");
+                case "move": {
+                    String user = p[1].replaceAll("p\\d[a]?: ?", "");
+                    String mv   = p[2];
+                    String tgt  = p.length>3 ? p[3].replaceAll("p\\d[a]?: ?", "") : "";
+                    callback.onMessageReceived("⚡ " + user + " used " + mv +
+                            (tgt.isEmpty()? "" : " on " + tgt) + "!");
                     break;
-
-                case "-fail":
-                    callback.onMessageReceived("🚫 " + parts[1] + "'s move failed!");
-                    break;
-
-                case "-immune":
-                    callback.onMessageReceived("🛡️ " + parts[1] + " is immune!");
-                    break;
-
-                case "-miss":
-                    callback.onMessageReceived("❌ " + parts[1] + "'s move missed!");
-                    break;
-
-                case "-crit":
-                    callback.onMessageReceived("💥 Critical hit on " + parts[1] + "!");
-                    break;
-
-                case "-supereffective":
-                    callback.onMessageReceived("🔥 It's super effective on " + parts[1] + "!");
-                    break;
-
-                case "-resisted":
-                    callback.onMessageReceived("🛡️ The attack was not very effective on " + parts[1] + "!");
-                    break;
+                }
 
                 case "-damage":
-                    callback.onMessageReceived("💥 " + parts[1] + " took damage! HP: " + (parts.length > 2 ? parts[2] : ""));
+                    callback.onMessageReceived("💥 " + p[1] + " took damage! HP: " + p[2]);
                     break;
-
                 case "-heal":
-                    callback.onMessageReceived("❤️ " + parts[1] + " healed. HP: " + (parts.length > 2 ? parts[2] : ""));
+                    callback.onMessageReceived("❤️ " + p[1] + " healed. HP: " + p[2]);
                     break;
-
                 case "-status":
-                    callback.onMessageReceived("🧪 " + parts[1] + " is now " + parts[2].toUpperCase() + "!");
+                    callback.onMessageReceived("🧪 " + p[1] + " is now " + p[2].toUpperCase() + "!");
                     break;
-
                 case "-curestatus":
-                    callback.onMessageReceived("🧼 " + parts[1] + " was cured of " + parts[2].toUpperCase() + "!");
+                    callback.onMessageReceived("🧼 " + p[1] + " cured of " + p[2].toUpperCase() + "!");
                     break;
 
-                case "-boost":
-                case "-unboost":
-                    String stat = parts[2];
-                    String amt = parts[3];
-                    String dir = cmd.equals("-boost") ? "rose" : "fell";
-                    callback.onMessageReceived("📈 " + parts[1] + "'s " + stat + " " + dir + " by " + amt + "!");
+                case "-boost": case "-unboost": {
+                    String stat = p[2], amt = p[3];
+                    String dir = p[0].equals("-boost") ? "rose" : "fell";
+                    callback.onMessageReceived("📈 " + p[1] + "'s " + stat +
+                            " " + dir + " by " + amt + "!");
                     break;
+                }
 
-                case "switch":
-                    String[] sw = parts[1].split(",");
+                case "switch": {
+                    String[] sw = p[1].split(",");
                     callback.onMessageReceived("🔄 Switched to " + sw[0] + "!");
                     break;
+                }
 
                 case "faint":
-                    callback.onMessageReceived("💀 " + parts[1] + " fainted!");
+                    callback.onMessageReceived("💀 " + p[1] + " fainted!");
                     break;
-
                 case "win":
-                    callback.onMessageReceived("\n🏆 " + parts[1] + " wins the battle!");
+                    callback.onMessageReceived("\n🏆 " + p[1] + " wins!");
                     break;
-
-                case "upkeep":
-                    // Ignore or optionally show a turn transition
+                case "-fail":
+                    callback.onMessageReceived("🚫 " + p[1] + " failed!");
                     break;
-
-                default:
-                    // General fallback, avoid spammy output
-                    if (!cmd.isEmpty()) {
-                        callback.onMessageReceived("• " + String.join(" | ", parts));
-                    }
+                case "-miss":
+                    callback.onMessageReceived("❌ " + p[1] + " missed!");
+                    break;
+                case "error":
+                    callback.onMessageReceived("⚠️ Error: " +
+                            (p.length>1? p[1] : "unknown"));
+                    break;
             }
         }
     }
 
+    /** Retry search every 10 seconds until matched */
+    private void retrySearch() {
+        if (battleRoomId == null && webSocket != null) {
+            callback.onMessageReceived("🔄 Retrying gen8randombattle search...");
+            webSocket.send("|/search gen8randombattle");
+            handler.postDelayed(this::retrySearch, 10_000);
+        }
+    }
+
     @Override
-    public void onClosing(WebSocket webSocket, int code, String reason) {
+    public void onClosing(WebSocket ws, int code, String reason) {
         callback.onMessageReceived("❌ Closing: " + reason);
     }
 
     @Override
-    public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+    public void onFailure(WebSocket ws, Throwable t, Response resp) {
         callback.onMessageReceived("💥 Error: " + t.getMessage());
     }
 }

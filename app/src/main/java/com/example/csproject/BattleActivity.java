@@ -1,28 +1,27 @@
 package com.example.csproject;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.example.csproject.ShowdownWebSocketClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class BattleActivity extends AppCompatActivity {
     private ScrollView scrollLog;
     private TextView battleLog;
     private FrameLayout controlsContainer;
-    private View viewControls;
-    private View viewFightOpts, viewPartyOpts;
+    private View viewControls, viewFightOpts, viewPartyOpts;
     private ShowdownWebSocketClient socketClient;
-
     public static boolean isMenuOpen = false;
 
     @Override
@@ -30,178 +29,159 @@ public class BattleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_battle);
 
-        // 1) Core views
         scrollLog         = findViewById(R.id.scrollLogContainer);
         battleLog         = findViewById(R.id.battleLog);
         controlsContainer = findViewById(R.id.controlsContainer);
 
-        // 2) Spectator mode: hide the entire controls area
-        boolean spectator = getIntent().getBooleanExtra("spectator_mode", false);
-        if (spectator) {
-            controlsContainer.setVisibility(View.GONE);
-        }
+        viewControls  = getLayoutInflater().inflate(R.layout.controls_two_buttons,   controlsContainer, false);
+        viewFightOpts = getLayoutInflater().inflate(R.layout.controls_fight_options, controlsContainer, false);
+        viewPartyOpts = getLayoutInflater().inflate(R.layout.controls_party_options, controlsContainer, false);
 
-        // 3) Inflate control panels (but don't attach yet)
-        viewControls  = getLayoutInflater()
-                .inflate(R.layout.controls_two_buttons,    controlsContainer, false);
-        viewFightOpts = getLayoutInflater()
-                .inflate(R.layout.controls_fight_options,  controlsContainer, false);
-        viewPartyOpts = getLayoutInflater()
-                .inflate(R.layout.controls_party_options,  controlsContainer, false);
-
-        // 4) Wire up each panel before adding to the container
-        wireControlPanels(viewControls, viewFightOpts, viewPartyOpts);
-
-        // 5) Attach them (in order)
+        wireControlPanels();
         controlsContainer.addView(viewControls);
         controlsContainer.addView(viewFightOpts);
         controlsContainer.addView(viewPartyOpts);
 
-        // 6) Hook move and switch buttons
         setupMoveButtons();
-
-        // 7) Menu button and WebSocket
+        setupSwitchButtons();  // now with +1 fix
         setupMenuButton();
         initWebSocket();
     }
 
-    /** Wire the fight & party control panels. */
-    private void wireControlPanels(
-            View controls,
-            View fightOpts,
-            View partyOpts
-    ) {
-        // Main panel: Fight / Party
-        Button btnFight = controls.findViewById(R.id.buttonFight);
-        Button btnParty = controls.findViewById(R.id.buttonParty);
-
-        btnFight.setOnClickListener(v -> {
-            controls.setVisibility(View.GONE);
-            fightOpts.setVisibility(View.VISIBLE);
+    private void wireControlPanels() {
+        viewControls.findViewById(R.id.buttonFight).setOnClickListener(v -> {
+            viewControls.setVisibility(View.GONE);
+            viewFightOpts.setVisibility(View.VISIBLE);
         });
-        btnParty.setOnClickListener(v -> {
-            controls.setVisibility(View.GONE);
-            partyOpts.setVisibility(View.VISIBLE);
+        viewControls.findViewById(R.id.buttonParty).setOnClickListener(v -> {
+            viewControls.setVisibility(View.GONE);
+            viewPartyOpts.setVisibility(View.VISIBLE);
+            refreshSwitchButtons();
         });
-
-        // Fight-options Back
-        Button backFight = fightOpts.findViewById(R.id.buttonBackFight);
-        backFight.setOnClickListener(v -> {
-            fightOpts.setVisibility(View.GONE);
-            controls.setVisibility(View.VISIBLE);
+        viewFightOpts.findViewById(R.id.buttonBackFight).setOnClickListener(v -> {
+            viewFightOpts.setVisibility(View.GONE);
+            viewControls.setVisibility(View.VISIBLE);
         });
-
-        // Party-options Back
-        Button backParty = partyOpts.findViewById(R.id.buttonBackParty);
-        backParty.setOnClickListener(v -> {
-            partyOpts.setVisibility(View.GONE);
-            controls.setVisibility(View.VISIBLE);
+        viewPartyOpts.findViewById(R.id.buttonBackParty).setOnClickListener(v -> {
+            viewPartyOpts.setVisibility(View.GONE);
+            viewControls.setVisibility(View.VISIBLE);
         });
-
-        // Initial visibilities
-        controls .setVisibility(View.VISIBLE);
-        fightOpts.setVisibility(View.GONE);
-        partyOpts.setVisibility(View.GONE);
+        viewControls .setVisibility(View.VISIBLE);
+        viewFightOpts.setVisibility(View.GONE);
+        viewPartyOpts.setVisibility(View.GONE);
     }
 
-    /** Set up the four move buttons and six switch buttons. */
     private void setupMoveButtons() {
-        // 1) Universal move‐click listener: reads the tag you’ll set below
         View.OnClickListener moveClick = v -> {
             int idx = Integer.parseInt(v.getTag().toString());
-            socketClient.send("|/choose move " + idx);
+            socketClient.send("/choose move " + idx);
             viewFightOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
         };
-
-        // 2) Dynamically look up move1…move4 in your fight‐options view
         for (int i = 1; i <= 4; i++) {
-            String name = "move" + i;
-            int resId = getResources().getIdentifier(name, "id", getPackageName());
-            Button m = viewFightOpts.findViewById(resId);
-            if (m != null) {
-                // ensure XML has android:tag="1", etc—or set it here:
-                m.setTag(String.valueOf(i));
-                m.setOnClickListener(moveClick);
-            } else {
-                Log.w("BattleActivity", "setupMoveButtons: no view for ID " + name);
+            Button b = viewFightOpts.findViewById(
+                    getResources().getIdentifier("move" + i, "id", getPackageName())
+            );
+            if (b != null) {
+                b.setTag(String.valueOf(i));
+                b.setOnClickListener(moveClick);
             }
         }
+    }
 
-        // 3) Same pattern for switch buttons: buttonSwitch1…buttonSwitch6
+    private void setupSwitchButtons() {
         View.OnClickListener switchClick = v -> {
-            int idx = Integer.parseInt(v.getTag().toString());
-            socketClient.send("|/choose switch " + idx);
+            Object tag = v.getTag();
+            if (tag == null) {
+                Toast.makeText(this, "Party not loaded yet—please wait.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int zeroBased = Integer.parseInt(tag.toString());
+            int oneBased  = zeroBased + 1;  // 🔑 convert to 1–6
+            socketClient.send("/choose switch " + oneBased);
             viewPartyOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
         };
-
         for (int i = 1; i <= 6; i++) {
-            String name = "buttonSwitch" + i;
-            int resId = getResources().getIdentifier(name, "id", getPackageName());
-            Button sw = viewPartyOpts.findViewById(resId);
-            if (sw != null) {
-                sw.setTag(String.valueOf(i));
-                sw.setOnClickListener(switchClick);
-            } else {
-                Log.w("BattleActivity", "setupMoveButtons: no view for ID " + name);
-            }
+            Button b = viewPartyOpts.findViewById(
+                    getResources().getIdentifier("party" + i, "id", getPackageName())
+            );
+            if (b != null) b.setOnClickListener(switchClick);
         }
     }
 
+    private void refreshSwitchButtons() {
+        JSONObject req = socketClient.getLastRequestJson();
+        if (req == null) return;
+        try {
+            String activeName = null;
+            if (req.has("side")) {
+                JSONObject side = req.getJSONObject("side");
+                if (side.has("active")) {
+                    JSONArray act = side.getJSONArray("active");
+                    if (act.length() > 0) {
+                        activeName = act.getJSONObject(0)
+                                .getString("ident").split(",")[0]
+                                .replaceAll("p\\d[a]?: ?", "").trim();
+                    }
+                }
+            }
 
-    /** Menu button logic. */
+            JSONArray party = req.getJSONObject("side").getJSONArray("pokemon");
+            for (int i = 0; i < 6; i++) {
+                JSONObject mon = party.getJSONObject(i);
+                String name = mon.getString("ident").split(",")[0]
+                        .replaceAll("p\\d[a]?: ?", "").trim();
+                boolean fainted   = mon.optString("condition","").startsWith("0");
+                boolean isCurrent = name.equals(activeName);
+
+                Button b = viewPartyOpts.findViewById(
+                        getResources().getIdentifier("party" + (i+1), "id", getPackageName())
+                );
+                if (b != null) {
+                    b.setText(name + (isCurrent ? " (current)" : ""));
+                    b.setEnabled(!fainted && !isCurrent);
+                    b.setTag(String.valueOf(i));
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void setupMenuButton() {
-        ImageButton menuBtn = findViewById(R.id.buttonOpenMenu);
-        menuBtn.setOnClickListener(v -> {
-            if (!isMenuOpen) showMenuFragment();
+        ImageButton mb = findViewById(R.id.buttonOpenMenu);
+        mb.setOnClickListener(v -> {
+            if (!isMenuOpen) {
+                MenuFragment mf = new MenuFragment();
+                FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+                tx.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+                tx.replace(R.id.menuFragmentContainer, mf).commit();
+                findViewById(R.id.menuFragmentContainer).setVisibility(View.VISIBLE);
+                isMenuOpen = true;
+            }
         });
     }
 
-    private void showMenuFragment() {
-        MenuFragment menuFragment = new MenuFragment();
-        FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
-        tx.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
-        tx.replace(R.id.menuFragmentContainer, menuFragment);
-        tx.commit();
-        findViewById(R.id.menuFragmentContainer).setVisibility(View.VISIBLE);
-        isMenuOpen = true;
-    }
-
-    public void closeMenuFragment() {
-        Fragment frag = getSupportFragmentManager()
-                .findFragmentById(R.id.menuFragmentContainer);
-        if (frag != null) {
-            getSupportFragmentManager().beginTransaction().remove(frag).commit();
-        }
-        findViewById(R.id.menuFragmentContainer).setVisibility(View.GONE);
-        isMenuOpen = false;
+    private void initWebSocket() {
+        socketClient = new ShowdownWebSocketClient(msg -> runOnUiThread(() -> {
+            battleLog.append(msg + "\n");
+            scrollLog.fullScroll(View.FOCUS_DOWN);
+        }));
+        socketClient.connect();
     }
 
     @Override
     public void onBackPressed() {
         if (isMenuOpen) {
-            closeMenuFragment();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    /** Initialize WebSocket to append messages to the log. */
-    private void initWebSocket() {
-        socketClient = new ShowdownWebSocketClient(message ->
-                runOnUiThread(() -> {
-                    battleLog.append(message + "\n");
-                    scrollLog.fullScroll(View.FOCUS_DOWN);
-                })
-        );
-        socketClient.connect();
+            Fragment f = getSupportFragmentManager().findFragmentById(R.id.menuFragmentContainer);
+            if (f != null) getSupportFragmentManager().beginTransaction().remove(f).commit();
+            findViewById(R.id.menuFragmentContainer).setVisibility(View.GONE);
+            isMenuOpen = false;
+        } else super.onBackPressed();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (socketClient != null) socketClient.close();
+        socketClient.close();
     }
 }
-
