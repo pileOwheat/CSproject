@@ -10,7 +10,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import org.json.JSONArray;
@@ -29,11 +28,13 @@ public class BattleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_battle);
 
-        scrollLog         = findViewById(R.id.scrollLogContainer);
-        battleLog         = findViewById(R.id.battleLog);
+        // Bind UI
+        scrollLog = findViewById(R.id.scrollLogContainer);
+        battleLog = findViewById(R.id.battleLog);
         controlsContainer = findViewById(R.id.controlsContainer);
 
-        viewControls  = getLayoutInflater().inflate(R.layout.controls_two_buttons,   controlsContainer, false);
+        // Inflate control panels
+        viewControls  = getLayoutInflater().inflate(R.layout.controls_two_buttons, controlsContainer, false);
         viewFightOpts = getLayoutInflater().inflate(R.layout.controls_fight_options, controlsContainer, false);
         viewPartyOpts = getLayoutInflater().inflate(R.layout.controls_party_options, controlsContainer, false);
 
@@ -43,30 +44,40 @@ public class BattleActivity extends AppCompatActivity {
         controlsContainer.addView(viewPartyOpts);
 
         setupMoveButtons();
-        setupSwitchButtons();  // now with +1 fix
+        setupSwitchButtons();
         setupMenuButton();
         initWebSocket();
     }
 
     private void wireControlPanels() {
+        // Primary controls → Fight
         viewControls.findViewById(R.id.buttonFight).setOnClickListener(v -> {
             viewControls.setVisibility(View.GONE);
             viewFightOpts.setVisibility(View.VISIBLE);
+            refreshMoveButtons();  // Populate move names & form-change state
         });
+
+        // Primary controls → Party
         viewControls.findViewById(R.id.buttonParty).setOnClickListener(v -> {
             viewControls.setVisibility(View.GONE);
             viewPartyOpts.setVisibility(View.VISIBLE);
             refreshSwitchButtons();
         });
+
+        // Back from Fight options
         viewFightOpts.findViewById(R.id.buttonBackFight).setOnClickListener(v -> {
             viewFightOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
         });
+
+        // Back from Party options
         viewPartyOpts.findViewById(R.id.buttonBackParty).setOnClickListener(v -> {
             viewPartyOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
         });
-        viewControls .setVisibility(View.VISIBLE);
+
+        // Initial visibility
+        viewControls.setVisibility(View.VISIBLE);
         viewFightOpts.setVisibility(View.GONE);
         viewPartyOpts.setVisibility(View.GONE);
     }
@@ -83,7 +94,7 @@ public class BattleActivity extends AppCompatActivity {
                     getResources().getIdentifier("move" + i, "id", getPackageName())
             );
             if (b != null) {
-                b.setTag(String.valueOf(i));
+                b.setTag(String.valueOf(i - 1));  // zero-based for Showdown
                 b.setOnClickListener(moveClick);
             }
         }
@@ -97,7 +108,7 @@ public class BattleActivity extends AppCompatActivity {
                 return;
             }
             int zeroBased = Integer.parseInt(tag.toString());
-            int oneBased  = zeroBased + 1;  // 🔑 convert to 1–6
+            int oneBased  = zeroBased + 1;
             socketClient.send("/choose switch " + oneBased);
             viewPartyOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
@@ -114,27 +125,21 @@ public class BattleActivity extends AppCompatActivity {
         JSONObject req = socketClient.getLastRequestJson();
         if (req == null) return;
         try {
+            JSONObject side = req.getJSONObject("side");
+            JSONArray party = side.getJSONArray("pokemon");
             String activeName = null;
-            if (req.has("side")) {
-                JSONObject side = req.getJSONObject("side");
-                if (side.has("active")) {
-                    JSONArray act = side.getJSONArray("active");
-                    if (act.length() > 0) {
-                        activeName = act.getJSONObject(0)
-                                .getString("ident").split(",")[0]
-                                .replaceAll("p\\d[a]?: ?", "").trim();
-                    }
-                }
+            JSONArray activeArr = side.optJSONArray("active");
+            if (activeArr != null && activeArr.length() > 0) {
+                activeName = activeArr.getJSONObject(0)
+                        .getString("ident").split(",")[0]
+                        .replaceAll("p\\d[a]?: ?", "").trim();
             }
-
-            JSONArray party = req.getJSONObject("side").getJSONArray("pokemon");
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < party.length(); i++) {
                 JSONObject mon = party.getJSONObject(i);
                 String name = mon.getString("ident").split(",")[0]
                         .replaceAll("p\\d[a]?: ?", "").trim();
                 boolean fainted   = mon.optString("condition","").startsWith("0");
                 boolean isCurrent = name.equals(activeName);
-
                 Button b = viewPartyOpts.findViewById(
                         getResources().getIdentifier("party" + (i+1), "id", getPackageName())
                 );
@@ -147,14 +152,59 @@ public class BattleActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
+    private void refreshMoveButtons() {
+        JSONObject req = socketClient.getLastRequestJson();
+        if (req == null) return;
+        try {
+            // Moves & form-change live under active[0]
+            JSONArray activeArr = req.optJSONArray("active");
+            if (activeArr == null || activeArr.length() == 0) return;
+            JSONObject active = activeArr.getJSONObject(0);
+
+            // 1) Populate moves
+            JSONArray moveObjs = active.optJSONArray("moves");
+            for (int i = 0; i < 4; i++) {
+                Button mvBtn = viewFightOpts.findViewById(
+                        getResources().getIdentifier("move" + (i + 1), "id", getPackageName())
+                );
+                if (moveObjs != null && i < moveObjs.length()) {
+                    String moveName = moveObjs.getJSONObject(i).getString("move");
+                    mvBtn.setText(moveName);
+                    mvBtn.setEnabled(true);
+                } else {
+                    mvBtn.setText("—");
+                    mvBtn.setEnabled(false);
+                }
+            }
+
+            // 2) Handle Form Change (canMegaEvo / canUltraBurst / etc.)
+            Button formChange = viewFightOpts.findViewById(R.id.buttonFormChange);
+            if (active.has("canMegaEvo")) {
+                final int megaIndex = active.getInt("canMegaEvo");
+                formChange.setEnabled(true);
+                formChange.setOnClickListener(v -> {
+                    socketClient.send("/choose move " + megaIndex + " mega");
+                    viewFightOpts.setVisibility(View.GONE);
+                    viewControls.setVisibility(View.VISIBLE);
+                });
+            } else {
+                formChange.setEnabled(false);
+                formChange.setOnClickListener(null);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void setupMenuButton() {
         ImageButton mb = findViewById(R.id.buttonOpenMenu);
         mb.setOnClickListener(v -> {
             if (!isMenuOpen) {
-                MenuFragment mf = new MenuFragment();
                 FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
-                tx.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
-                tx.replace(R.id.menuFragmentContainer, mf).commit();
+                tx.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                        .replace(R.id.menuFragmentContainer, new MenuFragment())
+                        .commit();
                 findViewById(R.id.menuFragmentContainer).setVisibility(View.VISIBLE);
                 isMenuOpen = true;
             }
@@ -172,11 +222,14 @@ public class BattleActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         if (isMenuOpen) {
-            Fragment f = getSupportFragmentManager().findFragmentById(R.id.menuFragmentContainer);
-            if (f != null) getSupportFragmentManager().beginTransaction().remove(f).commit();
+            getSupportFragmentManager().beginTransaction()
+                    .remove(getSupportFragmentManager().findFragmentById(R.id.menuFragmentContainer))
+                    .commit();
             findViewById(R.id.menuFragmentContainer).setVisibility(View.GONE);
             isMenuOpen = false;
-        } else super.onBackPressed();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
@@ -185,3 +238,4 @@ public class BattleActivity extends AppCompatActivity {
         socketClient.close();
     }
 }
+
