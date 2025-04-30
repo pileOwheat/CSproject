@@ -27,12 +27,107 @@
                 android:src="@android:drawable/ic_menu_sort_by_size" />
         </FrameLayout>
 
+        <!-- BATTLE UI (sprites, names, HP bars) -->
+
         <!-- Battle log that resizes dynamically -->
+        <RelativeLayout
+            android:id="@+id/battleTopUI"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:padding="8dp">
+
+            <!-- Opponent sprite and info -->
+
+            <ProgressBar
+                android:id="@+id/opponentHP3"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="124dp"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/opponentSprite"
+                android:layout_alignStart="@id/opponentSprite"
+                android:layout_marginStart="-315dp"
+                android:layout_marginTop="-71dp"
+                android:progress="100" />
+
+            <TextView
+                android:id="@+id/playerInfo2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@id/playerSprite"
+                android:layout_alignStart="@id/playerSprite"
+                android:layout_marginStart="-1dp"
+                android:layout_marginBottom="22dp"
+                android:text="YourMon Lv.50 [Status]"
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <ImageView
+                android:id="@+id/opponentSprite"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="98dp"
+                android:layout_marginEnd="3dp" />
+
+            <TextView
+                android:id="@+id/opponentInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@id/opponentSprite"
+                android:layout_alignEnd="@id/opponentSprite"
+                android:text="Opponent Lv.50 [Status]"
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <!-- Player sprite and info -->
+
+            <ProgressBar
+                android:id="@+id/opponentHP"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="124dp"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/opponentSprite"
+                android:layout_alignStart="@id/opponentSprite"
+                android:layout_marginStart="-46dp"
+                android:layout_marginTop="-104dp"
+                android:progress="100" />
+
+            <ImageView
+                android:id="@+id/playerSprite"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentBottom="true" />
+
+            <TextView
+                android:id="@+id/playerInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@id/playerSprite"
+                android:layout_alignStart="@id/playerSprite"
+                android:layout_marginStart="268dp"
+                android:layout_marginBottom="56dp"
+                android:text="YourMon Lv.50 [Status]"
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <ProgressBar
+                android:id="@+id/playerHP"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/playerSprite"
+                android:layout_alignStart="@id/playerSprite"
+                android:progress="100" />
+        </RelativeLayout>
+
         <ScrollView
             android:id="@+id/scrollLogContainer"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_weight="2"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp">
 
@@ -49,7 +144,8 @@
         <FrameLayout
             android:id="@+id/controlsContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="0dp"
+            android:layout_weight="2" />
     </LinearLayout>
 
     <!-- Overlay for menu fragment -->
@@ -57,7 +153,5 @@
         android:id="@+id/menuFragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone">
-
-    </FrameLayout>
+        android:visibility="gone" />
 </FrameLayout>

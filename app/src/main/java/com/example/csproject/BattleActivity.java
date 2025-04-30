@@ -10,6 +10,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -24,9 +26,9 @@ public class BattleActivity extends AppCompatActivity {
     private ShowdownWebSocketClient socketClient;
 
     public static boolean isMenuOpen = false;
-
     private boolean isFormToggleEnabled = false;
     private String currentFormType = null;
+    private String opponentSwitchInName = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,7 +152,6 @@ public class BattleActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-
     private void refreshMoveButtons() {
         JSONObject req = socketClient.getLastRequestJson();
         if (req == null) return;
@@ -160,15 +161,12 @@ public class BattleActivity extends AppCompatActivity {
             if (activeArr == null || activeArr.length() == 0) return;
             JSONObject active = activeArr.getJSONObject(0);
 
-            Log.d("BATTLE_JSON", "Active JSON: " + active.toString());
-
             JSONArray moveObjs = active.optJSONArray("moves");
             boolean canMega = active.optBoolean("canMegaEvo", false);
             boolean canZMove = active.optBoolean("canZMove", false);
             boolean canDynamax = active.optBoolean("canDynamax", false);
             boolean canTera = active.optBoolean("canTerastallize", false);
 
-            // Priority: Z > Mega > Dynamax > Tera
             if (canZMove) currentFormType = "zmove";
             else if (canMega) currentFormType = "mega";
             else if (canDynamax) currentFormType = "dynamax";
@@ -198,7 +196,7 @@ public class BattleActivity extends AppCompatActivity {
                         }
 
                         socketClient.send(command.toString());
-                        isFormToggleEnabled = false; // reset after use
+                        isFormToggleEnabled = false;
                         viewFightOpts.setVisibility(View.GONE);
                         viewControls.setVisibility(View.VISIBLE);
                     });
@@ -215,19 +213,16 @@ public class BattleActivity extends AppCompatActivity {
             formChange.setOnClickListener(null);
             String teraType = null;
 
-            if (active.has("canMegaEvo")) {
-                currentFormType = "mega";
-            } else if (active.has("canZMove")) {
-                currentFormType = "zmove";
-            } else if (active.has("canDynamax")) {
-                currentFormType = "dynamax";
-            } else if (active.has("canTerastallize")) {
+            if (active.has("canMegaEvo")) currentFormType = "mega";
+            else if (active.has("canZMove")) currentFormType = "zmove";
+            else if (active.has("canDynamax")) currentFormType = "dynamax";
+            else if (active.has("canTerastallize")) {
                 currentFormType = "terastallize";
                 teraType = active.optString("canTerastallize", null);
-
             }
+
             if (currentFormType != null) {
-                String label = "Use " + (currentFormType.substring(0, 1).toUpperCase() + currentFormType.substring(1));
+                String label = "Use " + currentFormType.substring(0, 1).toUpperCase() + currentFormType.substring(1);
                 if ("terastallize".equals(currentFormType) && teraType != null) {
                     label += " (" + teraType + ")";
                 }
@@ -236,11 +231,13 @@ public class BattleActivity extends AppCompatActivity {
                 String currentTeraType = teraType;
                 formChange.setOnClickListener(v -> {
                     isFormToggleEnabled = !isFormToggleEnabled;
-                    formChange.setText(isFormToggleEnabled ? currentFormType.toUpperCase()  + " (" + currentTeraType + ")" +  ": ON" : currentFormType.toUpperCase()+ " (" + currentTeraType + ")" + ": OFF");
+                    formChange.setText(isFormToggleEnabled
+                            ? currentFormType.toUpperCase() + " (" + currentTeraType + "): ON"
+                            : currentFormType.toUpperCase() + " (" + currentTeraType + "): OFF");
                 });
             } else {
                 formChange.setEnabled(false);
-                formChange.setText("Form Change Unavaliable");
+                formChange.setText("Form Change Unavailable");
                 formChange.setOnClickListener(null);
             }
 
@@ -269,19 +266,6 @@ public class BattleActivity extends AppCompatActivity {
             scrollLog.fullScroll(View.FOCUS_DOWN);
         }));
         socketClient.connect();
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (isMenuOpen) {
-            getSupportFragmentManager().beginTransaction()
-                    .remove(getSupportFragmentManager().findFragmentById(R.id.menuFragmentContainer))
-                    .commit();
-            findViewById(R.id.menuFragmentContainer).setVisibility(View.GONE);
-            isMenuOpen = false;
-        } else {
-            super.onBackPressed();
-        }
     }
 
     @Override

@@ -106,6 +106,22 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                 case "request":
                     try {
                         lastRequestJson = new JSONObject(line.substring("request|".length()));
+                        Log.d("ShowdownClient", "Request JSON: " + lastRequestJson.toString());
+
+                        // Check for "side" and "foeSide" in the JSON
+                        if (lastRequestJson.has("side")) {
+                            JSONObject side = lastRequestJson.getJSONObject("side");
+                            Log.d("ShowdownClient", "Side info: " + side.toString());
+                        }
+
+                        if (lastRequestJson.has("foeSide")) {
+                            JSONObject foeSide = lastRequestJson.getJSONObject("foeSide");
+                            Log.d("ShowdownClient", "Foe side info: " + foeSide.toString());
+                        } else {
+                            Log.d("ShowdownClient", "Foe side is still missing!");
+                        }
+
+                        // Set mySlot based on side ID
                         String sideId = lastRequestJson.getJSONObject("side").getString("id");
                         mySlot = sideId.equals("p1") ? 1 : 2;
                     } catch (JSONException e) {
@@ -125,59 +141,49 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                     break;
                 }
 
-                case "-damage":
-                    callback.onMessageReceived("💥 " + p[1] + " took damage! HP: " + p[2]);
+                case "damage":
+                    callback.onMessageReceived("💢 " + p[1] + " took damage!");
                     break;
 
-                case "-heal":
-                    callback.onMessageReceived("❤️ " + p[1] + " healed. HP: " + p[2]);
+                case "heal":
+                    callback.onMessageReceived("💚 " + p[1] + " healed!");
                     break;
-
-                case "-status":
-                    callback.onMessageReceived("🧪 " + p[1] + " is now " + p[2].toUpperCase() + "!");
-                    break;
-
-                case "-curestatus":
-                    callback.onMessageReceived("🧼 " + p[1] + " cured of " + p[2].toUpperCase() + "!");
-                    break;
-
-                case "-boost":
-                case "-unboost": {
-                    String stat = p[2], amt = p[3];
-                    String dir = p[0].equals("-boost") ? "rose" : "fell";
-                    callback.onMessageReceived("📈 " + p[1] + "'s " + stat + " " + dir + " by " + amt + "!");
-                    break;
-                }
-
-                case "switch": {
-                    String slotAndName = p[1].split(",")[0];
-                    String mon = slotAndName.replaceAll("p\\d[a]?: ?", "").trim();
-                    int slot = slotAndName.startsWith("p1") ? 1 : 2;
-                    String msg = (slot == mySlot)
-                            ? "👉 You switched in " + mon + "!"
-                            : "👈 Opponent switched in " + mon + "!";
-                    callback.onMessageReceived(msg);
-                    break;
-                }
 
                 case "faint":
                     callback.onMessageReceived("💀 " + p[1] + " fainted!");
                     break;
 
+                case "switch": {
+                    String[] parts = p[1].split(": ");
+                    if (parts.length < 2) {
+                        Log.w("BATTLE_PARSE", "Invalid switch message: " + p[1]);
+                        break;
+                    }
+                    String slotTag = parts[0];
+                    String monName = parts[1];
+                    int slot = slotTag.startsWith("p1") ? 1 : 2;
+                    String msg = (slot == mySlot)
+                            ? "👉 You switched in " + monName + "!"
+                            : "👈 Opponent switched in " + monName + "!";
+                    Log.d("BATTLE_PARSE", "Parsed switch: mon=" + monName + ", slot=" + slot + ", mySlot=" + mySlot);
+                    callback.onMessageReceived(msg);
+                    break;
+                }
+
                 case "win":
-                    callback.onMessageReceived("\n🏆 " + p[1] + " wins!");
+                    callback.onMessageReceived("🏆 Winner: " + p[1]);
                     break;
 
-                case "-fail":
-                    callback.onMessageReceived("🚫 " + p[1] + " failed!");
-                    break;
-
-                case "-miss":
-                    callback.onMessageReceived("❌ " + p[1] + " missed!");
+                case "tie":
+                    callback.onMessageReceived("🤝 It's a tie!");
                     break;
 
                 case "error":
-                    callback.onMessageReceived("⚠️ Error: " + (p.length > 1 ? p[1] : "unknown"));
+                    callback.onMessageReceived("⚠️ Error: " + p[1]);
+                    break;
+
+                default:
+                    // Unhandled message type
                     break;
             }
         }
