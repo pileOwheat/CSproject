@@ -213,6 +213,7 @@ public class BattleActivity extends AppCompatActivity {
             Button formChange = viewFightOpts.findViewById(R.id.buttonFormChange);
             formChange.setEnabled(false);
             formChange.setOnClickListener(null);
+            String teraType = null;
 
             if (active.has("canMegaEvo")) {
                 currentFormType = "mega";
@@ -222,17 +223,24 @@ public class BattleActivity extends AppCompatActivity {
                 currentFormType = "dynamax";
             } else if (active.has("canTerastallize")) {
                 currentFormType = "terastallize";
+                teraType = active.optString("canTerastallize", null);
+
             }
             if (currentFormType != null) {
+                String label = "Use " + (currentFormType.substring(0, 1).toUpperCase() + currentFormType.substring(1));
+                if ("terastallize".equals(currentFormType) && teraType != null) {
+                    label += " (" + teraType + ")";
+                }
+                formChange.setText(label);
                 formChange.setEnabled(true);
-                formChange.setText(isFormToggleEnabled ? currentFormType.toUpperCase() + ": ON" : currentFormType.toUpperCase() + ": OFF");
+                String currentTeraType = teraType;
                 formChange.setOnClickListener(v -> {
                     isFormToggleEnabled = !isFormToggleEnabled;
-                    formChange.setText(isFormToggleEnabled ? currentFormType.toUpperCase() + ": ON" : currentFormType.toUpperCase() + ": OFF");
+                    formChange.setText(isFormToggleEnabled ? currentFormType.toUpperCase()  + " (" + currentTeraType + ")" +  ": ON" : currentFormType.toUpperCase()+ " (" + currentTeraType + ")" + ": OFF");
                 });
             } else {
                 formChange.setEnabled(false);
-                formChange.setText("Form: —");
+                formChange.setText("Form Change Unavaliable");
                 formChange.setOnClickListener(null);
             }
 
