@@ -1,4 +1,3 @@
-// ShowdownWebSocketClient.java
 package com.example.csproject;
 
 import android.os.Handler;
@@ -6,7 +5,6 @@ import android.os.Looper;
 import android.util.Log;
 
 import okhttp3.*;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,6 +22,9 @@ public class ShowdownWebSocketClient extends WebSocketListener {
 
     private String battleRoomId;
     private JSONObject lastRequestJson;
+
+    // Track our slot (1 or 2)
+    private int mySlot = -1;
 
     public ShowdownWebSocketClient(MessageCallback callback) {
         this.callback = callback;
@@ -72,8 +73,7 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         ws.send("|/trn " + guest + ",0");
 
         // 2) Immediately search—no waiting on updateuser
-        ws.send("|/search gen8randombattle");
-        // schedule retry every 10s until matched
+        ws.send("|/search randombattle");
         handler.postDelayed(this::retrySearch, 10_000);
     }
 
@@ -96,7 +96,6 @@ public class ShowdownWebSocketClient extends WebSocketListener {
 
             switch (p[0]) {
                 case "updateSearch":
-                    // matched
                     Matcher m = Pattern.compile("\"(battle-[^\"}]+)\"").matcher(line);
                     if (m.find()) {
                         battleRoomId = m.group(1);
@@ -107,7 +106,6 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                     break;
 
                 case "init":
-                    // join confirmation
                     if (currentRoom != null && currentRoom.startsWith("battle-")) {
                         battleRoomId = currentRoom;
                         callback.onMessageReceived("⚔️ Joined: " + battleRoomId);
@@ -116,9 +114,12 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                     break;
 
                 case "request":
-                    // capture JSON for party UI
                     try {
                         lastRequestJson = new JSONObject(line.substring("request|".length()));
+                        // Determine our slot from side.id ("p1" or "p2")
+                        String sideId = lastRequestJson
+                                .getJSONObject("side").getString("id");
+                        mySlot = sideId.equals("p1") ? 1 : 2;
                     } catch (JSONException e) {
                         Log.e("ShowdownClient", "request JSON error", e);
                     }
@@ -159,8 +160,13 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                 }
 
                 case "switch": {
-                    String[] sw = p[1].split(",");
-                    callback.onMessageReceived("🔄 Switched to " + sw[0] + "!");
+                    String slotAndName = p[1].split(",")[0];
+                    String mon = slotAndName.replaceAll("p\\d[a]?: ?", "").trim();
+                    int slot = slotAndName.startsWith("p1") ? 1 : 2;
+                    String msg = (slot == mySlot)
+                            ? "👉 You switched in " + mon + "!"
+                            : "👈 Opponent switched in " + mon + "!";
+                    callback.onMessageReceived(msg);
                     break;
                 }
 
@@ -187,8 +193,8 @@ public class ShowdownWebSocketClient extends WebSocketListener {
     /** Retry search every 10 seconds until matched */
     private void retrySearch() {
         if (battleRoomId == null && webSocket != null) {
-            callback.onMessageReceived("🔄 Retrying gen8randombattle search...");
-            webSocket.send("|/search gen8randombattle");
+            callback.onMessageReceived("🔄 Retrying randombattle search...");
+            webSocket.send("|/search randombattle");
             handler.postDelayed(this::retrySearch, 10_000);
         }
     }

@@ -50,33 +50,28 @@ public class BattleActivity extends AppCompatActivity {
     }
 
     private void wireControlPanels() {
-        // Primary controls → Fight
         viewControls.findViewById(R.id.buttonFight).setOnClickListener(v -> {
             viewControls.setVisibility(View.GONE);
             viewFightOpts.setVisibility(View.VISIBLE);
-            refreshMoveButtons();  // Populate move names & form-change state
+            refreshMoveButtons();  // Refresh when opening Fight panel
         });
 
-        // Primary controls → Party
         viewControls.findViewById(R.id.buttonParty).setOnClickListener(v -> {
             viewControls.setVisibility(View.GONE);
             viewPartyOpts.setVisibility(View.VISIBLE);
             refreshSwitchButtons();
         });
 
-        // Back from Fight options
         viewFightOpts.findViewById(R.id.buttonBackFight).setOnClickListener(v -> {
             viewFightOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
         });
 
-        // Back from Party options
         viewPartyOpts.findViewById(R.id.buttonBackParty).setOnClickListener(v -> {
             viewPartyOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
         });
 
-        // Initial visibility
         viewControls.setVisibility(View.VISIBLE);
         viewFightOpts.setVisibility(View.GONE);
         viewPartyOpts.setVisibility(View.GONE);
@@ -94,7 +89,7 @@ public class BattleActivity extends AppCompatActivity {
                     getResources().getIdentifier("move" + i, "id", getPackageName())
             );
             if (b != null) {
-                b.setTag(String.valueOf(i - 1));  // zero-based for Showdown
+                b.setTag(String.valueOf(i));  // now 1-based indexing
                 b.setOnClickListener(moveClick);
             }
         }
@@ -108,7 +103,7 @@ public class BattleActivity extends AppCompatActivity {
                 return;
             }
             int zeroBased = Integer.parseInt(tag.toString());
-            int oneBased  = zeroBased + 1;
+            int oneBased = zeroBased + 1;
             socketClient.send("/choose switch " + oneBased);
             viewPartyOpts.setVisibility(View.GONE);
             viewControls.setVisibility(View.VISIBLE);
@@ -156,12 +151,10 @@ public class BattleActivity extends AppCompatActivity {
         JSONObject req = socketClient.getLastRequestJson();
         if (req == null) return;
         try {
-            // Moves & form-change live under active[0]
             JSONArray activeArr = req.optJSONArray("active");
             if (activeArr == null || activeArr.length() == 0) return;
             JSONObject active = activeArr.getJSONObject(0);
 
-            // 1) Populate moves
             JSONArray moveObjs = active.optJSONArray("moves");
             for (int i = 0; i < 4; i++) {
                 Button mvBtn = viewFightOpts.findViewById(
@@ -177,7 +170,6 @@ public class BattleActivity extends AppCompatActivity {
                 }
             }
 
-            // 2) Handle Form Change (canMegaEvo / canUltraBurst / etc.)
             Button formChange = viewFightOpts.findViewById(R.id.buttonFormChange);
             if (active.has("canMegaEvo")) {
                 final int megaIndex = active.getInt("canMegaEvo");
@@ -238,4 +230,3 @@ public class BattleActivity extends AppCompatActivity {
         socketClient.close();
     }
 }
-
