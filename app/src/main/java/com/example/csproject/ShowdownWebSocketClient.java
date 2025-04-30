@@ -13,7 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ShowdownWebSocketClient extends WebSocketListener {
-    public interface MessageCallback { void onMessageReceived(String msg); }
+    public interface MessageCallback {
+        void onMessageReceived(String msg);
+    }
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final OkHttpClient client;
@@ -22,32 +24,23 @@ public class ShowdownWebSocketClient extends WebSocketListener {
 
     private String battleRoomId;
     private JSONObject lastRequestJson;
-
-    // Track our slot (1 or 2)
     private int mySlot = -1;
 
     public ShowdownWebSocketClient(MessageCallback callback) {
         this.callback = callback;
-        this.client   = new OkHttpClient.Builder()
-                .readTimeout(0, TimeUnit.MILLISECONDS)
-                .build();
+        this.client = new OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build();
     }
 
-    /** Connect to sim3.psim.us */
     public void connect() {
-        Request req = new Request.Builder()
-                .url("wss://sim3.psim.us/showdown/websocket")
-                .build();
+        Request req = new Request.Builder().url("wss://sim3.psim.us/showdown/websocket").build();
         client.newWebSocket(req, this);
     }
 
-    /** Clean-up */
     public void close() {
         handler.removeCallbacksAndMessages(null);
         if (webSocket != null) webSocket.close(1000, "User closed");
     }
 
-    /** Send a slash command (auto–prefixed) or raw text */
     public void send(String msg) {
         if (webSocket == null) return;
         if (msg.startsWith("/")) {
@@ -58,7 +51,6 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         }
     }
 
-    /** Expose last request JSON so UI can refresh on demand */
     public JSONObject getLastRequestJson() {
         return lastRequestJson;
     }
@@ -68,13 +60,11 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         this.webSocket = ws;
         callback.onMessageReceived("✅ Connected to Showdown");
 
-        // 1) Login as guest
-        String guest = "guest" + (int)(Math.random() * 10000);
+        String guest = "guest" + (int) (Math.random() * 10000);
         ws.send("|/trn " + guest + ",0");
 
-        // 2) Immediately search—no waiting on updateuser
         ws.send("|/search randombattle");
-        handler.postDelayed(this::retrySearch, 10_000);
+        handler.postDelayed(this::retrySearch, 10000);
     }
 
     @Override
@@ -96,7 +86,7 @@ public class ShowdownWebSocketClient extends WebSocketListener {
 
             switch (p[0]) {
                 case "updateSearch":
-                    Matcher m = Pattern.compile("\"(battle-[^\"}]+)\"").matcher(line);
+                    Matcher m = Pattern.compile("\"(battle-[^\"]+)\"").matcher(line);
                     if (m.find()) {
                         battleRoomId = m.group(1);
                         callback.onMessageReceived("⚔️ Matched: " + battleRoomId);
@@ -116,9 +106,7 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                 case "request":
                     try {
                         lastRequestJson = new JSONObject(line.substring("request|".length()));
-                        // Determine our slot from side.id ("p1" or "p2")
-                        String sideId = lastRequestJson
-                                .getJSONObject("side").getString("id");
+                        String sideId = lastRequestJson.getJSONObject("side").getString("id");
                         mySlot = sideId.equals("p1") ? 1 : 2;
                     } catch (JSONException e) {
                         Log.e("ShowdownClient", "request JSON error", e);
@@ -131,31 +119,33 @@ public class ShowdownWebSocketClient extends WebSocketListener {
 
                 case "move": {
                     String user = p[1].replaceAll("p\\d[a]?: ?", "");
-                    String mv   = p[2];
-                    String tgt  = p.length>3 ? p[3].replaceAll("p\\d[a]?: ?", "") : "";
-                    callback.onMessageReceived("⚡ " + user + " used " + mv +
-                            (tgt.isEmpty()? "" : " on " + tgt) + "!");
+                    String mv = p[2];
+                    String tgt = p.length > 3 ? p[3].replaceAll("p\\d[a]?: ?", "") : "";
+                    callback.onMessageReceived("⚡ " + user + " used " + mv + (tgt.isEmpty() ? "" : " on " + tgt) + "!");
                     break;
                 }
 
                 case "-damage":
                     callback.onMessageReceived("💥 " + p[1] + " took damage! HP: " + p[2]);
                     break;
+
                 case "-heal":
                     callback.onMessageReceived("❤️ " + p[1] + " healed. HP: " + p[2]);
                     break;
+
                 case "-status":
                     callback.onMessageReceived("🧪 " + p[1] + " is now " + p[2].toUpperCase() + "!");
                     break;
+
                 case "-curestatus":
                     callback.onMessageReceived("🧼 " + p[1] + " cured of " + p[2].toUpperCase() + "!");
                     break;
 
-                case "-boost": case "-unboost": {
+                case "-boost":
+                case "-unboost": {
                     String stat = p[2], amt = p[3];
                     String dir = p[0].equals("-boost") ? "rose" : "fell";
-                    callback.onMessageReceived("📈 " + p[1] + "'s " + stat +
-                            " " + dir + " by " + amt + "!");
+                    callback.onMessageReceived("📈 " + p[1] + "'s " + stat + " " + dir + " by " + amt + "!");
                     break;
                 }
 
@@ -173,29 +163,31 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                 case "faint":
                     callback.onMessageReceived("💀 " + p[1] + " fainted!");
                     break;
+
                 case "win":
                     callback.onMessageReceived("\n🏆 " + p[1] + " wins!");
                     break;
+
                 case "-fail":
                     callback.onMessageReceived("🚫 " + p[1] + " failed!");
                     break;
+
                 case "-miss":
                     callback.onMessageReceived("❌ " + p[1] + " missed!");
                     break;
+
                 case "error":
-                    callback.onMessageReceived("⚠️ Error: " +
-                            (p.length>1? p[1] : "unknown"));
+                    callback.onMessageReceived("⚠️ Error: " + (p.length > 1 ? p[1] : "unknown"));
                     break;
             }
         }
     }
 
-    /** Retry search every 10 seconds until matched */
     private void retrySearch() {
         if (battleRoomId == null && webSocket != null) {
             callback.onMessageReceived("🔄 Retrying randombattle search...");
             webSocket.send("|/search randombattle");
-            handler.postDelayed(this::retrySearch, 10_000);
+            handler.postDelayed(this::retrySearch, 10000);
         }
     }
 

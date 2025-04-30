@@ -1,6 +1,7 @@
 package com.example.csproject;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -21,19 +22,21 @@ public class BattleActivity extends AppCompatActivity {
     private FrameLayout controlsContainer;
     private View viewControls, viewFightOpts, viewPartyOpts;
     private ShowdownWebSocketClient socketClient;
+
     public static boolean isMenuOpen = false;
+
+    private boolean isFormToggleEnabled = false;
+    private String currentFormType = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_battle);
 
-        // Bind UI
         scrollLog = findViewById(R.id.scrollLogContainer);
         battleLog = findViewById(R.id.battleLog);
         controlsContainer = findViewById(R.id.controlsContainer);
 
-        // Inflate control panels
         viewControls  = getLayoutInflater().inflate(R.layout.controls_two_buttons, controlsContainer, false);
         viewFightOpts = getLayoutInflater().inflate(R.layout.controls_fight_options, controlsContainer, false);
         viewPartyOpts = getLayoutInflater().inflate(R.layout.controls_party_options, controlsContainer, false);
@@ -53,7 +56,7 @@ public class BattleActivity extends AppCompatActivity {
         viewControls.findViewById(R.id.buttonFight).setOnClickListener(v -> {
             viewControls.setVisibility(View.GONE);
             viewFightOpts.setVisibility(View.VISIBLE);
-            refreshMoveButtons();  // Refresh when opening Fight panel
+            refreshMoveButtons();
         });
 
         viewControls.findViewById(R.id.buttonParty).setOnClickListener(v -> {
@@ -89,7 +92,7 @@ public class BattleActivity extends AppCompatActivity {
                     getResources().getIdentifier("move" + i, "id", getPackageName())
             );
             if (b != null) {
-                b.setTag(String.valueOf(i));  // now 1-based indexing
+                b.setTag(String.valueOf(i));
                 b.setOnClickListener(moveClick);
             }
         }
@@ -133,10 +136,10 @@ public class BattleActivity extends AppCompatActivity {
                 JSONObject mon = party.getJSONObject(i);
                 String name = mon.getString("ident").split(",")[0]
                         .replaceAll("p\\d[a]?: ?", "").trim();
-                boolean fainted   = mon.optString("condition","").startsWith("0");
+                boolean fainted = mon.optString("condition", "").startsWith("0");
                 boolean isCurrent = name.equals(activeName);
                 Button b = viewPartyOpts.findViewById(
-                        getResources().getIdentifier("party" + (i+1), "id", getPackageName())
+                        getResources().getIdentifier("party" + (i + 1), "id", getPackageName())
                 );
                 if (b != null) {
                     b.setText(name + (isCurrent ? " (current)" : ""));
@@ -147,40 +150,89 @@ public class BattleActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
+
     private void refreshMoveButtons() {
         JSONObject req = socketClient.getLastRequestJson();
         if (req == null) return;
+
         try {
             JSONArray activeArr = req.optJSONArray("active");
             if (activeArr == null || activeArr.length() == 0) return;
             JSONObject active = activeArr.getJSONObject(0);
 
+            Log.d("BATTLE_JSON", "Active JSON: " + active.toString());
+
             JSONArray moveObjs = active.optJSONArray("moves");
+            boolean canMega = active.optBoolean("canMegaEvo", false);
+            boolean canZMove = active.optBoolean("canZMove", false);
+            boolean canDynamax = active.optBoolean("canDynamax", false);
+            boolean canTera = active.optBoolean("canTerastallize", false);
+
+            // Priority: Z > Mega > Dynamax > Tera
+            if (canZMove) currentFormType = "zmove";
+            else if (canMega) currentFormType = "mega";
+            else if (canDynamax) currentFormType = "dynamax";
+            else if (canTera) currentFormType = "terastallize";
+            else currentFormType = null;
+
             for (int i = 0; i < 4; i++) {
                 Button mvBtn = viewFightOpts.findViewById(
                         getResources().getIdentifier("move" + (i + 1), "id", getPackageName())
                 );
                 if (moveObjs != null && i < moveObjs.length()) {
-                    String moveName = moveObjs.getJSONObject(i).getString("move");
-                    mvBtn.setText(moveName);
+                    JSONObject moveObj = moveObjs.getJSONObject(i);
+                    String moveName = moveObj.getString("move");
+                    boolean isZ = moveObj.optBoolean("zMove", false);
+                    mvBtn.setText(isZ ? moveName + " (Z)" : moveName);
                     mvBtn.setEnabled(true);
+                    int moveIndex = i + 1;
+
+                    mvBtn.setOnClickListener(v -> {
+                        StringBuilder command = new StringBuilder("/choose move " + moveIndex);
+                        if (isFormToggleEnabled) {
+                            if ("zmove".equals(currentFormType) && isZ) {
+                                command.append(" zmove");
+                            } else if (!"zmove".equals(currentFormType)) {
+                                command.append(" ").append(currentFormType);
+                            }
+                        }
+
+                        socketClient.send(command.toString());
+                        isFormToggleEnabled = false; // reset after use
+                        viewFightOpts.setVisibility(View.GONE);
+                        viewControls.setVisibility(View.VISIBLE);
+                    });
+
                 } else {
                     mvBtn.setText("—");
                     mvBtn.setEnabled(false);
+                    mvBtn.setOnClickListener(null);
                 }
             }
 
             Button formChange = viewFightOpts.findViewById(R.id.buttonFormChange);
+            formChange.setEnabled(false);
+            formChange.setOnClickListener(null);
+
             if (active.has("canMegaEvo")) {
-                final int megaIndex = active.getInt("canMegaEvo");
+                currentFormType = "mega";
+            } else if (active.has("canZMove")) {
+                currentFormType = "zmove";
+            } else if (active.has("canDynamax")) {
+                currentFormType = "dynamax";
+            } else if (active.has("canTerastallize")) {
+                currentFormType = "terastallize";
+            }
+            if (currentFormType != null) {
                 formChange.setEnabled(true);
+                formChange.setText(isFormToggleEnabled ? currentFormType.toUpperCase() + ": ON" : currentFormType.toUpperCase() + ": OFF");
                 formChange.setOnClickListener(v -> {
-                    socketClient.send("/choose move " + megaIndex + " mega");
-                    viewFightOpts.setVisibility(View.GONE);
-                    viewControls.setVisibility(View.VISIBLE);
+                    isFormToggleEnabled = !isFormToggleEnabled;
+                    formChange.setText(isFormToggleEnabled ? currentFormType.toUpperCase() + ": ON" : currentFormType.toUpperCase() + ": OFF");
                 });
             } else {
                 formChange.setEnabled(false);
+                formChange.setText("Form: —");
                 formChange.setOnClickListener(null);
             }
 
