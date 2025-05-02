@@ -22,6 +22,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.request.target.Target;
 
 import androidx.annotation.Nullable;
 
@@ -607,13 +608,9 @@ public class BattleActivity extends AppCompatActivity {
         String formattedName = pokemonName.toLowerCase().replaceAll("[^a-z0-9]", "");
         
         // Handle special cases for Gen 9 Pokémon that have different naming conventions
+        // Paradox Pokémon
         if (formattedName.contains("iron")) {
-            // Handle Iron Bundle, Iron Hands, Iron Jugulis, Iron Moth, Iron Thorns, Iron Treads, Iron Valiant
             formattedName = formattedName.replace("iron", "iron-");
-        } else if (formattedName.equals("screamtail")) {
-            formattedName = "flutter-mane"; // Temporary fix - replace with correct name when available
-        } else if (formattedName.equals("fluttermane")) {
-            formattedName = "flutter-mane";
         } else if (formattedName.equals("greattusk")) {
             formattedName = "great-tusk";
         } else if (formattedName.equals("brutebonnet")) {
@@ -624,6 +621,21 @@ public class BattleActivity extends AppCompatActivity {
             formattedName = "slither-wing";
         } else if (formattedName.equals("roaringmoon")) {
             formattedName = "roaring-moon";
+        } else if (formattedName.equals("fluttermane")) {
+            formattedName = "flutter-mane";
+        } else if (formattedName.equals("screamtail")) {
+            formattedName = "scream-tail";
+        } else if (formattedName.equals("walkingwake")) {
+            formattedName = "walking-wake";
+        } else if (formattedName.equals("gougingfire")) {
+            formattedName = "gouging-fire";
+        } else if (formattedName.equals("ragingbolt")) {
+            formattedName = "raging-bolt";
+        } else if (formattedName.equals("ironleaves")) {
+            formattedName = "iron-leaves";
+        } else if (formattedName.equals("wormadam")) {
+            // Handle Wormadam forms
+            formattedName = "wormadam-plant";
         }
         
         Log.d(TAG, "Formatted Pokémon name: " + formattedName);
@@ -641,19 +653,82 @@ public class BattleActivity extends AppCompatActivity {
         // Second fallback for newer Pokémon (Gen 9) that might only be in dex sprites
         String dexUrl = "https://play.pokemonshowdown.com/sprites/dex/" + formattedName + ".png";
         
+        // Third fallback for any missing Pokémon - use the official artwork
+        String officialArtUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/" + getPokemonIdByName(formattedName) + ".png";
+        
         Log.d(TAG, "Attempting to load sprite for: " + pokemonName);
         Log.d(TAG, "Animated URL: " + animatedUrl);
         Log.d(TAG, "Static URL: " + staticUrl);
         Log.d(TAG, "Dex URL: " + dexUrl);
+        Log.d(TAG, "Official Art URL: " + officialArtUrl);
         
-        // Try to load animated sprite with fallback to static, then to dex
+        // Try to load animated sprite with fallback to static, then to dex, then to official art
         Glide.with(this)
             .load(animatedUrl)
             .error(Glide.with(this)
                 .load(staticUrl)
-                .error(Glide.with(this).load(dexUrl)))
+                .error(Glide.with(this)
+                    .load(dexUrl)
+                    .error(Glide.with(this)
+                        .load(officialArtUrl))))
+            .listener(new RequestListener<Drawable>() {
+                @Override
+                public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                    Log.e(TAG, "Failed to load sprite for: " + pokemonName + " - " + e.getMessage());
+                    return false; // Let Glide handle the fallback
+                }
+
+                @Override
+                public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                    Log.d(TAG, "Successfully loaded sprite for: " + pokemonName + " from " + dataSource.name());
+                    return false; // Continue as normal
+                }
+            })
             .transition(DrawableTransitionOptions.withCrossFade())
             .into(isPlayer ? playerSprite : opponentSprite);
+    }
+    
+    /**
+     * Helper method to get Pokémon ID by name for official artwork URL
+     * This is a simple mapping for some common Pokémon, would need to be expanded
+     */
+    private int getPokemonIdByName(String formattedName) {
+        // This would ideally be a complete mapping or API call
+        // For now, just handle some common cases and return a default
+        switch (formattedName) {
+            case "bulbasaur": return 1;
+            case "charmander": return 4;
+            case "squirtle": return 7;
+            case "pikachu": return 25;
+            case "eevee": return 133;
+            case "mewtwo": return 150;
+            case "scream-tail": return 954;
+            case "flutter-mane": return 953;
+            case "great-tusk": return 984;
+            case "brute-bonnet": return 986;
+            case "sandy-shocks": return 989;
+            case "iron-treads": return 990;
+            case "iron-bundle": return 991;
+            case "iron-hands": return 992;
+            case "iron-jugulis": return 993;
+            case "iron-moth": return 994;
+            case "iron-thorns": return 995;
+            case "iron-valiant": return 1000;
+            case "walking-wake": return 1009;
+            case "iron-leaves": return 1010;
+            case "gouging-fire": return 1017;
+            case "raging-bolt": return 1018;
+            default: 
+                // If we don't have a mapping, try to extract a number from the name
+                // This works for many Pokémon with forms like "charizard-mega-x"
+                try {
+                    String baseForm = formattedName.split("-")[0];
+                    // For Pokémon without a number in the name, return Missingno (0)
+                    return 0;
+                } catch (Exception e) {
+                    return 0; // Default to Missingno
+                }
+        }
     }
 
     /**

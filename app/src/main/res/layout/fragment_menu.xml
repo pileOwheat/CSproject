@@ -4,43 +4,90 @@
     android:layout_width="280dp"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#AA000000"
-    android:padding="24dp"
+    android:background="#B0333333"
+    android:padding="16dp"
     android:layout_gravity="start"
     android:elevation="8dp">
 
+    <!-- Menu Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#80555555"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp">
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pokémon Battle"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold"/>
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Menu Options"
+            android:textColor="#E0E0E0"
+            android:textSize="16sp"
+            android:layout_marginTop="4dp"/>
+    </LinearLayout>
+
+    <!-- Menu Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#80444444"
+        android:padding="8dp"
+        android:layout_marginBottom="16dp">
+        
+        <Button
+            android:id="@+id/buttonBackToMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Back to Main Menu"
+            android:textColor="#FFFFFF"
+            android:background="#4D6F8CAA"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:drawablePadding="8dp"
+            android:gravity="start|center_vertical"/>
+
+        <Button
+            android:id="@+id/buttonSettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textColor="#FFFFFF"
+            android:background="#4D6F8CAA"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:drawablePadding="8dp"
+            android:gravity="start|center_vertical"/>
+
+        <Button
+            android:id="@+id/buttonCloseMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Close Menu"
+            android:textColor="#FFFFFF"
+            android:background="#4D6F8CAA"
+            android:padding="12dp"
+            android:drawablePadding="8dp"
+            android:gravity="start|center_vertical"/>
+    </LinearLayout>
+    
+    <!-- Pokémon Showdown Credit -->
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Menu"
-        android:textColor="@android:color/white"
-        android:textSize="22sp"
-        android:layout_marginBottom="24dp"/>
-
-    <Button
-        android:id="@+id/buttonBackToMain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Back to Main Menu"
-        android:background="@android:color/transparent"
-        />
-
-    <Button
-        android:id="@+id/buttonSettings"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:color="#FF000000"
-        android:text="Settings"
-        android:textColor="@android:color/white"
-        android:background="@android:color/transparent"
-        />
-
-    <Button
-        android:id="@+id/buttonCloseMenu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Close Menu"
-        android:background="@android:color/transparent"
-        />
+        android:text="Backgrounds from Pokémon Showdown"
+        android:textColor="#CCCCCC"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:layout_marginTop="16dp"/>
 
 </LinearLayout>
