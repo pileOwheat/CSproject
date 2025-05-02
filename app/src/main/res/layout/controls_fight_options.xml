@@ -2,8 +2,19 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="8dp">
+    android:layout_height="match_parent"
+    android:padding="8dp"
+    android:background="#e3e3e3">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Choose a move"
+        android:textColor="#444444"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp"/>
 
     <LinearLayout
         android:orientation="horizontal"
@@ -16,7 +27,10 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Move 1" />
+            android:text="Move 1"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4d94ff"
+            android:layout_margin="2dp"/>
 
         <Button
             android:id="@+id/move2"
@@ -24,7 +38,10 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Move 2" />
+            android:text="Move 2"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4d94ff"
+            android:layout_margin="2dp"/>
 
     </LinearLayout>
 
@@ -40,8 +57,10 @@
             android:text="Move 3"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="wrap_content">
-
+            android:layout_height="wrap_content"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4d94ff"
+            android:layout_margin="2dp">
         </Button>
 
         <Button
@@ -50,10 +69,10 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:text="Move 4"
-            android:layout_height="wrap_content">
-
-
-
+            android:layout_height="wrap_content"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4d94ff"
+            android:layout_margin="2dp">
         </Button>
 
     </LinearLayout>
@@ -63,12 +82,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Form Change" />
+        android:text="Form Change"
+        android:textColor="#ffffff"
+        android:backgroundTint="#ff5252"
+        android:layout_margin="2dp"/>
 
     <Button
         android:id="@+id/buttonBackFight"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Back"
-        android:layout_marginTop="4dp" />
+        android:textColor="#444444"
+        android:backgroundTint="#d9d9d9"
+        android:layout_marginTop="8dp"
+        android:layout_margin="2dp"/>
 </LinearLayout>

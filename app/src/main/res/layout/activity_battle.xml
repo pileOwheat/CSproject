@@ -2,7 +2,8 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/containerRoot"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#f8f8f8">
 
     <!-- Main content container -->
     <LinearLayout
@@ -14,7 +15,8 @@
         <!-- Top-left menu button -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:background="#e3e3e3">
 
             <ImageButton
                 android:id="@+id/buttonOpenMenu"
@@ -25,119 +27,199 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Open Menu"
                 android:src="@android:drawable/ic_menu_sort_by_size" />
+                
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Random Battle"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#444444"
+                android:padding="8dp"/>
         </FrameLayout>
 
         <!-- BATTLE UI (sprites, names, HP bars) -->
-
-        <!-- Battle log that resizes dynamically -->
-        <RelativeLayout
+        <FrameLayout
             android:id="@+id/battleTopUI"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="2"
-            android:padding="8dp">
+            android:layout_weight="3"
+            android:background="#e8f4f8">  <!-- Simple light blue background -->
 
-            <!-- Opponent sprite and info -->
+            <!-- Battle UI Elements -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-            <ProgressBar
-                android:id="@+id/opponentHP3"
-                style="@android:style/Widget.ProgressBar.Horizontal"
-                android:layout_width="124dp"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/opponentSprite"
-                android:layout_alignStart="@id/opponentSprite"
-                android:layout_marginStart="-315dp"
-                android:layout_marginTop="-71dp"
-                android:progress="100" />
+                <!-- Opponent side -->
+                <LinearLayout
+                    android:id="@+id/opponentSide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:orientation="horizontal"
+                    android:padding="8dp">
 
-            <TextView
-                android:id="@+id/playerInfo2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_above="@id/playerSprite"
-                android:layout_alignStart="@id/playerSprite"
-                android:layout_marginStart="-1dp"
-                android:layout_marginBottom="22dp"
-                android:text="YourMon Lv.50 [Status]"
-                android:textColor="#000000"
-                android:textSize="12sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="#B3FFFFFF">
 
-            <ImageView
-                android:id="@+id/opponentSprite"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentEnd="true"
-                android:layout_marginTop="98dp"
-                android:layout_marginEnd="3dp" />
+                        <TextView
+                            android:id="@+id/opponentName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Opponent"
+                            android:textColor="#444444"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:paddingTop="4dp" />
 
-            <TextView
-                android:id="@+id/opponentInfo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_above="@id/opponentSprite"
-                android:layout_alignEnd="@id/opponentSprite"
-                android:text="Opponent Lv.50 [Status]"
-                android:textColor="#000000"
-                android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/opponentInfo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Opponent's Pokemon Lv.50"
+                            android:textColor="#666666"
+                            android:textSize="14sp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
 
-            <!-- Player sprite and info -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="4dp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="4dp">
 
-            <ProgressBar
-                android:id="@+id/opponentHP"
-                style="@android:style/Widget.ProgressBar.Horizontal"
-                android:layout_width="124dp"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/opponentSprite"
-                android:layout_alignStart="@id/opponentSprite"
-                android:layout_marginStart="-46dp"
-                android:layout_marginTop="-104dp"
-                android:progress="100" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="HP"
+                                android:textColor="#666666"
+                                android:textSize="12sp"
+                                android:layout_marginEnd="8dp"/>
 
-            <ImageView
-                android:id="@+id/playerSprite"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentBottom="true" />
+                            <ProgressBar
+                                android:id="@+id/opponentHP"
+                                style="@android:style/Widget.ProgressBar.Horizontal"
+                                android:layout_width="match_parent"
+                                android:layout_height="12dp"
+                                android:progressDrawable="@android:drawable/progress_horizontal"
+                                android:progress="100" />
+                        </LinearLayout>
+                    </LinearLayout>
 
-            <TextView
-                android:id="@+id/playerInfo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_above="@id/playerSprite"
-                android:layout_alignStart="@id/playerSprite"
-                android:layout_marginStart="268dp"
-                android:layout_marginBottom="56dp"
-                android:text="YourMon Lv.50 [Status]"
-                android:textColor="#000000"
-                android:textSize="12sp" />
+                    <ImageView
+                        android:id="@+id/opponentSprite"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:layout_gravity="center_vertical"/>
+                </LinearLayout>
 
-            <ProgressBar
-                android:id="@+id/playerHP"
-                style="@android:style/Widget.ProgressBar.Horizontal"
-                android:layout_width="100dp"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/playerSprite"
-                android:layout_alignStart="@id/playerSprite"
-                android:progress="100" />
-        </RelativeLayout>
+                <!-- Player side -->
+                <LinearLayout
+                    android:id="@+id/playerSide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:orientation="horizontal"
+                    android:padding="8dp">
 
+                    <ImageView
+                        android:id="@+id/playerSprite"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:layout_gravity="center_vertical"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="8dp"
+                        android:background="#B3FFFFFF">
+
+                        <TextView
+                            android:id="@+id/playerName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="You"
+                            android:textColor="#444444"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:paddingTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/playerInfo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Your Pokemon Lv.50"
+                            android:textColor="#666666"
+                            android:textSize="14sp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="4dp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="HP"
+                                android:textColor="#666666"
+                                android:textSize="12sp"
+                                android:layout_marginEnd="8dp"/>
+
+                            <ProgressBar
+                                android:id="@+id/playerHP"
+                                style="@android:style/Widget.ProgressBar.Horizontal"
+                                android:layout_width="match_parent"
+                                android:layout_height="12dp"
+                                android:progressDrawable="@android:drawable/progress_horizontal"
+                                android:progress="100" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </RelativeLayout>
+        </FrameLayout>
+
+        <!-- Battle log with Showdown-like styling -->
         <ScrollView
             android:id="@+id/scrollLogContainer"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="2"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp">
+            android:background="#f8f8f8"
+            android:layout_margin="8dp">
 
             <TextView
                 android:id="@+id/battleLog"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="8dp"
                 android:paddingBottom="16dp"
-                android:textAppearance="?android:textAppearanceMedium"
-                android:textColor="#000000"/>
+                android:textSize="14sp"
+                android:textColor="#333333"
+                android:lineSpacingExtra="4dp"
+                android:fontFamily="sans-serif"/>
         </ScrollView>
 
         <!-- Controls shown at bottom -->
@@ -145,13 +227,15 @@
             android:id="@+id/controlsContainer"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="2" />
+            android:layout_weight="2"
+            android:background="#e3e3e3" />
     </LinearLayout>
 
-    <!-- Overlay for menu fragment -->
+    <!-- Overlay for menu fragment - side panel -->
     <FrameLayout
         android:id="@+id/menuFragmentContainer"
-        android:layout_width="match_parent"
+        android:layout_width="280dp"
         android:layout_height="match_parent"
+        android:layout_gravity="start"
         android:visibility="gone" />
 </FrameLayout>

@@ -3,7 +3,18 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="8dp">
+    android:padding="8dp"
+    android:background="#e3e3e3">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Switch Pokemon"
+        android:textColor="#444444"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp"/>
 
     <GridLayout
         android:columnCount="3"
@@ -19,42 +30,72 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1"
-            android:text="Mon1" />
+            android:text="Mon1"
+            android:textColor="#ffffff"
+            android:backgroundTint="#59a559"
+            android:layout_margin="2dp"
+            android:textSize="12sp"
+            android:padding="8dp"/>
         <Button
             android:id="@+id/party2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1"
-            android:text="Mon2" />
+            android:text="Mon2"
+            android:textColor="#ffffff"
+            android:backgroundTint="#59a559"
+            android:layout_margin="2dp"
+            android:textSize="12sp"
+            android:padding="8dp"/>
         <Button
             android:id="@+id/party3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1"
-            android:text="Mon3" />
+            android:text="Mon3"
+            android:textColor="#ffffff"
+            android:backgroundTint="#59a559"
+            android:layout_margin="2dp"
+            android:textSize="12sp"
+            android:padding="8dp"/>
         <Button
             android:id="@+id/party4"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1"
-            android:text="Mon4" />
+            android:text="Mon4"
+            android:textColor="#ffffff"
+            android:backgroundTint="#59a559"
+            android:layout_margin="2dp"
+            android:textSize="12sp"
+            android:padding="8dp"/>
         <Button
             android:id="@+id/party5"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1"
-            android:text="Mon5" />
+            android:text="Mon5"
+            android:textColor="#ffffff"
+            android:backgroundTint="#59a559"
+            android:layout_margin="2dp"
+            android:textSize="12sp"
+            android:padding="8dp"/>
         <Button
             android:id="@+id/party6"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1"
-            android:text="Mon6" />
+            android:text="Mon6"
+            android:textColor="#ffffff"
+            android:backgroundTint="#59a559"
+            android:layout_margin="2dp"
+            android:textSize="12sp"
+            android:padding="8dp"/>
     </GridLayout>
 
     <Button
@@ -62,5 +103,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Back"
-        android:layout_marginTop="8dp" />
+        android:textColor="#444444"
+        android:backgroundTint="#d9d9d9"
+        android:layout_marginTop="8dp"
+        android:layout_margin="2dp"/>
 </LinearLayout>
