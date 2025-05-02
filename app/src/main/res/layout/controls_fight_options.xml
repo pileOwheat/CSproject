@@ -87,6 +87,12 @@
         android:backgroundTint="#ff5252"
         android:layout_margin="2dp"/>
 
+    <!-- Added weight to push the back button to the bottom -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
     <Button
         android:id="@+id/buttonBackFight"
         android:layout_width="match_parent"
@@ -95,5 +101,8 @@
         android:textColor="#444444"
         android:backgroundTint="#d9d9d9"
         android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:padding="12dp"
+        android:textSize="16sp"
         android:layout_margin="2dp"/>
 </LinearLayout>

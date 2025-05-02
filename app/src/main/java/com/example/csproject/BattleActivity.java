@@ -16,6 +16,10 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+
+import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -316,24 +320,24 @@ public class BattleActivity extends AppCompatActivity {
         // Format the Pokemon name for the URL (lowercase, remove spaces and special chars)
         String formattedName = pokemonName.toLowerCase().replaceAll("[^a-z0-9]", "");
         
-        // URLs for animated GIF Pokemon sprites from Showdown
-        String spriteUrl;
-        if (isPlayer) {
-            // Back sprite for player's Pokemon
-            spriteUrl = "https://play.pokemonshowdown.com/sprites/ani-back/" + formattedName + ".gif";
-        } else {
-            // Front sprite for opponent's Pokemon
-            spriteUrl = "https://play.pokemonshowdown.com/sprites/ani/" + formattedName + ".gif";
-        }
+        // Try loading animated sprite first
+        String animatedUrl = isPlayer 
+            ? "https://play.pokemonshowdown.com/sprites/ani-back/" + formattedName + ".gif"
+            : "https://play.pokemonshowdown.com/sprites/ani/" + formattedName + ".gif";
+            
+        // Fallback to static sprite if animated fails
+        String staticUrl = isPlayer
+            ? "https://play.pokemonshowdown.com/sprites/gen5-back/" + formattedName + ".png"
+            : "https://play.pokemonshowdown.com/sprites/gen5/" + formattedName + ".png";
         
-        Log.d("BattleActivity", "Loading Pokemon sprite from: " + spriteUrl);
+        Log.d("BattleActivity", "Attempting to load sprite for: " + pokemonName);
         
-        // Use Glide to load the animated GIF
+        // Try to load animated sprite with fallback to static
         Glide.with(this)
-                .asGif()
-                .load(spriteUrl)
-                .transition(DrawableTransitionOptions.withCrossFade())
-                .into(isPlayer ? playerSprite : opponentSprite);
+            .load(animatedUrl)
+            .error(Glide.with(this).load(staticUrl))
+            .transition(DrawableTransitionOptions.withCrossFade())
+            .into(isPlayer ? playerSprite : opponentSprite);
     }
 
     @Override
