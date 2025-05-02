@@ -2,8 +2,33 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/containerRoot"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#f8f8f8">
+    android:layout_height="match_parent">
+    
+    <!-- Battle Background Image - Positioned as the first child to cover the entire screen -->
+    <ImageView
+        android:id="@+id/battleBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="Battle background" />
+
+    <!-- Pokémon sprites with fixed positions -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        
+        <!-- Opponent Pokémon sprite - fixed position -->
+        <ImageView
+            android:id="@+id/opponentSprite"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="60dp"
+            android:layout_marginEnd="20dp"
+            android:contentDescription="Opponent's Pokémon" />
+            
+        <!-- Player Pokémon sprite - fixed position -->
+    </FrameLayout>
 
     <!-- Main content container -->
     <LinearLayout
@@ -16,7 +41,7 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#e3e3e3">
+            android:background="#80e3e3e3">  <!-- Semi-transparent background -->
 
             <ImageButton
                 android:id="@+id/buttonOpenMenu"
@@ -39,13 +64,11 @@
                 android:padding="8dp"/>
         </FrameLayout>
 
-        <!-- BATTLE UI (sprites, names, HP bars) -->
+        <!-- BATTLE UI (HP bars, names) - FIXED HEIGHT -->
         <FrameLayout
             android:id="@+id/battleTopUI"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="3"
-            android:background="#e8f4f8">  <!-- Simple light blue background -->
+            android:layout_height="300dp">  <!-- Fixed height to prevent resizing -->
 
             <!-- Battle UI Elements -->
             <RelativeLayout
@@ -55,15 +78,15 @@
                 <!-- Opponent side -->
                 <LinearLayout
                     android:id="@+id/opponentSide"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentTop="true"
-                    android:orientation="horizontal"
+                    android:layout_alignParentStart="true"
+                    android:orientation="vertical"
                     android:padding="8dp">
 
                     <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_weight="2"
+                        android:layout_width="180dp"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:background="#B3FFFFFF">
@@ -116,12 +139,6 @@
                                 android:progress="100" />
                         </LinearLayout>
                     </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/opponentSprite"
-                        android:layout_width="100dp"
-                        android:layout_height="100dp"
-                        android:layout_gravity="center_vertical"/>
                 </LinearLayout>
 
                 <!-- Player side -->
@@ -199,43 +216,50 @@
             </RelativeLayout>
         </FrameLayout>
 
-        <!-- Battle log with Showdown-like styling -->
-        <ScrollView
-            android:id="@+id/scrollLogContainer"
+        <!-- Flexible space that will expand and contract -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="#f8f8f8"
-            android:layout_margin="8dp">
-
-            <TextView
-                android:id="@+id/battleLog"
+            android:layout_weight="1">
+            
+            <!-- Battle log with Showdown-like styling -->
+            <ScrollView
+                android:id="@+id/scrollLogContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="16dp"
-                android:textSize="14sp"
-                android:textColor="#333333"
-                android:lineSpacingExtra="4dp"
-                android:fontFamily="sans-serif"/>
-        </ScrollView>
+                android:layout_height="match_parent"
+                android:background="#B0f8f8f8"
+                android:layout_margin="8dp">
+
+                <TextView
+                    android:id="@+id/battleLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="16dp"
+                    android:textSize="14sp"
+                    android:textColor="#333333"
+                    android:lineSpacingExtra="4dp"
+                    android:fontFamily="sans-serif"/>
+            </ScrollView>
+        </FrameLayout>
 
         <!-- Controls shown at bottom -->
         <FrameLayout
             android:id="@+id/controlsContainer"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="3"
-            android:background="#e3e3e3" />
+            android:layout_height="wrap_content"
+            android:background="#B0e3e3e3"
+            android:padding="8dp">
+        </FrameLayout>
+
     </LinearLayout>
 
     <!-- Overlay for menu fragment - side panel -->
     <FrameLayout
         android:id="@+id/menuFragmentContainer"
-        android:layout_width="280dp"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
         android:visibility="gone" />
 </FrameLayout>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/twoButtonLayout"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_horizontal"
@@ -15,25 +15,31 @@
         android:textColor="#444444"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:layout_marginEnd="16dp"/>
+        android:layout_marginBottom="12dp"/>
 
-    <Button
-        android:id="@+id/buttonFight"
-        android:layout_width="0dp"
-        android:layout_weight="1"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Fight"
-        android:textColor="#ffffff"
-        android:backgroundTint="#ff5252"
-        android:layout_margin="4dp"/>
+        android:orientation="horizontal">
 
-    <Button
-        android:id="@+id/buttonParty"
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="wrap_content"
-        android:text="Party"
-        android:textColor="#ffffff"
-        android:backgroundTint="#59a559"
-        android:layout_margin="4dp"/>
+        <Button
+            android:id="@+id/buttonFight"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Fight"
+            android:textColor="#ffffff"
+            android:backgroundTint="#ff5252"
+            android:layout_margin="4dp"/>
+
+        <Button
+            android:id="@+id/buttonParty"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Party"
+            android:textColor="#ffffff"
+            android:backgroundTint="#59a559"
+            android:layout_margin="4dp"/>
+    </LinearLayout>
 </LinearLayout>

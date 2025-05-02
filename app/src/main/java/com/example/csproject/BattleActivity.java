@@ -1,8 +1,10 @@
 package com.example.csproject;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -19,6 +21,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.load.DataSource;
 
 import androidx.annotation.Nullable;
 
@@ -37,6 +40,13 @@ public class BattleActivity extends AppCompatActivity {
     private ImageView playerSprite;
     private ImageView opponentSprite;
     private FrameLayout menuFragmentContainer;
+    private ImageView battleBackground;
+    private static final String[] BATTLE_BACKGROUNDS = {
+            "bg-beach", "bg-city", "bg-dampcave", "bg-darkbeach", "bg-darkcity", 
+            "bg-darkmeadow", "bg-deepsea", "bg-desert", "bg-earthycave", 
+            "bg-forest", "bg-icecave", "bg-library", "bg-meadow", 
+            "bg-orasdesert", "bg-orassea", "bg-skypillar"
+    };
     
     // UI elements for dynamic updates
     private TextView playerPokemonInfo;
@@ -55,6 +65,10 @@ public class BattleActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Enable immersive game mode to hide system UI
+        enableGameMode();
+        
         setContentView(R.layout.activity_battle);
 
         scrollLog = findViewById(R.id.scrollLogContainer);
@@ -63,6 +77,10 @@ public class BattleActivity extends AppCompatActivity {
         playerSprite = findViewById(R.id.playerSprite);
         opponentSprite = findViewById(R.id.opponentSprite);
         menuFragmentContainer = findViewById(R.id.menuFragmentContainer);
+        battleBackground = findViewById(R.id.battleBackground);
+        
+        // Load a random battle background
+        loadRandomBattleBackground();
         
         // Initialize UI elements for dynamic updates
         playerPokemonInfo = findViewById(R.id.playerInfo);
@@ -542,22 +560,25 @@ public class BattleActivity extends AppCompatActivity {
     }
 
     private void initWebSocket() {
-        socketClient = new ShowdownWebSocketClient(msg -> runOnUiThread(() -> {
-            battleLog.append(msg + "\n");
-            scrollLog.fullScroll(View.FOCUS_DOWN);
-            
-            // Try to load Pokemon sprites when they're mentioned
-            if (msg.contains("switched in")) {
-                String pokemonName = extractPokemonName(msg);
-                if (pokemonName != null) {
-                    if (msg.contains("You switched in")) {
-                        loadPokemonSprite(pokemonName, true);
-                    } else if (msg.contains("Opponent switched in")) {
-                        loadPokemonSprite(pokemonName, false);
+        socketClient = new ShowdownWebSocketClient(message -> {
+            runOnUiThread(() -> {
+                battleLog.append(message + "\n");
+                // Scroll to the bottom when new messages are added
+                scrollLog.post(() -> scrollLog.fullScroll(ScrollView.FOCUS_DOWN));
+                
+                // Try to load Pokemon sprites when they're mentioned
+                if (message.contains("switched in")) {
+                    String pokemonName = extractPokemonName(message);
+                    if (pokemonName != null) {
+                        if (message.contains("You switched in")) {
+                            loadPokemonSprite(pokemonName, true);
+                        } else if (message.contains("Opponent switched in")) {
+                            loadPokemonSprite(pokemonName, false);
+                        }
                     }
                 }
-            }
-        }));
+            });
+        });
         
         // Set the battle data callback
         socketClient.setBattleDataCallback(battleManager);
@@ -585,7 +606,29 @@ public class BattleActivity extends AppCompatActivity {
         // Format the Pokemon name for the URL (lowercase, remove spaces and special chars)
         String formattedName = pokemonName.toLowerCase().replaceAll("[^a-z0-9]", "");
         
-        // Try loading animated sprite first
+        // Handle special cases for Gen 9 Pokémon that have different naming conventions
+        if (formattedName.contains("iron")) {
+            // Handle Iron Bundle, Iron Hands, Iron Jugulis, Iron Moth, Iron Thorns, Iron Treads, Iron Valiant
+            formattedName = formattedName.replace("iron", "iron-");
+        } else if (formattedName.equals("screamtail")) {
+            formattedName = "flutter-mane"; // Temporary fix - replace with correct name when available
+        } else if (formattedName.equals("fluttermane")) {
+            formattedName = "flutter-mane";
+        } else if (formattedName.equals("greattusk")) {
+            formattedName = "great-tusk";
+        } else if (formattedName.equals("brutebonnet")) {
+            formattedName = "brute-bonnet";
+        } else if (formattedName.equals("sandyshocks")) {
+            formattedName = "sandy-shocks";
+        } else if (formattedName.equals("slitherwing")) {
+            formattedName = "slither-wing";
+        } else if (formattedName.equals("roaringmoon")) {
+            formattedName = "roaring-moon";
+        }
+        
+        Log.d(TAG, "Formatted Pokémon name: " + formattedName);
+        
+        // Try loading animated sprite first from gen 8 animations
         String animatedUrl = isPlayer 
             ? "https://play.pokemonshowdown.com/sprites/ani-back/" + formattedName + ".gif"
             : "https://play.pokemonshowdown.com/sprites/ani/" + formattedName + ".gif";
@@ -595,14 +638,72 @@ public class BattleActivity extends AppCompatActivity {
             ? "https://play.pokemonshowdown.com/sprites/gen5-back/" + formattedName + ".png"
             : "https://play.pokemonshowdown.com/sprites/gen5/" + formattedName + ".png";
         
-        Log.d("BattleActivity", "Attempting to load sprite for: " + pokemonName);
+        // Second fallback for newer Pokémon (Gen 9) that might only be in dex sprites
+        String dexUrl = "https://play.pokemonshowdown.com/sprites/dex/" + formattedName + ".png";
         
-        // Try to load animated sprite with fallback to static
+        Log.d(TAG, "Attempting to load sprite for: " + pokemonName);
+        Log.d(TAG, "Animated URL: " + animatedUrl);
+        Log.d(TAG, "Static URL: " + staticUrl);
+        Log.d(TAG, "Dex URL: " + dexUrl);
+        
+        // Try to load animated sprite with fallback to static, then to dex
         Glide.with(this)
             .load(animatedUrl)
-            .error(Glide.with(this).load(staticUrl))
+            .error(Glide.with(this)
+                .load(staticUrl)
+                .error(Glide.with(this).load(dexUrl)))
             .transition(DrawableTransitionOptions.withCrossFade())
             .into(isPlayer ? playerSprite : opponentSprite);
+    }
+
+    /**
+     * Loads a random battle background from Pokémon Showdown
+     */
+    private void loadRandomBattleBackground() {
+        try {
+            // Select a random background from the array
+            int randomIndex = (int) (Math.random() * BATTLE_BACKGROUNDS.length);
+            String backgroundName = BATTLE_BACKGROUNDS[randomIndex];
+            
+            // Construct the URL for the background image
+            String backgroundUrl = "https://play.pokemonshowdown.com/sprites/gen6bgs/" + backgroundName + ".jpg";
+            
+            Log.d(TAG, "Loading battle background: " + backgroundUrl);
+            
+            // Load the background image using Glide
+            Glide.with(this)
+                    .load(backgroundUrl)
+                    .transition(DrawableTransitionOptions.withCrossFade(500))
+                    .error(R.drawable.ic_launcher_background) // Fallback if loading fails
+                    .into(battleBackground);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading battle background", e);
+        }
+    }
+
+    /**
+     * Enables immersive game mode to hide system UI elements
+     * This provides a full-screen experience without navigation buttons
+     */
+    private void enableGameMode() {
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            // Re-apply immersive mode when window regains focus
+            enableGameMode();
+        }
     }
 
     @Override
