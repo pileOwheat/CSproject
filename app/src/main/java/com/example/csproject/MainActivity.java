@@ -25,6 +25,9 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        // Ensure we're not in battle mode in the main menu
+        SoundManager.getInstance(this).setInBattleMode(false);
+
         Button startButton = findViewById(R.id.buttonStartBattle);//start battle
         Button joinSpectatorButton = findViewById(R.id.buttonJoinSpectator);
         Button settingsButton = findViewById(R.id.buttonSettings);
@@ -53,6 +56,15 @@ public class MainActivity extends AppCompatActivity {
             settingsButton.setOnClickListener(v -> {
                 openSettingsFragment();
             });
+        }
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure we're not in battle mode when returning to the main menu
+        if (SoundManager.getInstance(this) != null) {
+            SoundManager.getInstance(this).setInBattleMode(false);
         }
     }
     

@@ -35,11 +35,14 @@ public class SoundManager {
     
     // Background music
     private MediaPlayer mediaPlayer;
+    private String currentMusicTrack;
+    private boolean isResettingMusic = false;
     
     // Settings
     private boolean soundEffectsEnabled = true;
     private boolean backgroundMusicEnabled = true;
     private float volume = 0.8f;
+    private boolean inBattleMode = false;
     
     // Sound effect constants
     public static final int SFX_CLICK = 1;
@@ -215,19 +218,67 @@ public class SoundManager {
      * Enable or disable background music
      */
     public void setBackgroundMusicEnabled(boolean enabled) {
-        this.backgroundMusicEnabled = enabled;
-        
-        // If disabled, stop any currently playing music
-        if (!enabled && mediaPlayer != null) {
-            stopBackgroundMusic();
-        }
+        backgroundMusicEnabled = enabled;
         
         // Save the setting
-        SharedPreferences.Editor editor = context.getSharedPreferences("PokemonBattlePrefs", Context.MODE_PRIVATE).edit();
-        editor.putBoolean("background_music", enabled);
-        editor.apply();
+        SharedPreferences prefs = context.getSharedPreferences("PokemonBattlePrefs", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("background_music", enabled).apply();
         
-        Log.d(TAG, "Background music " + (enabled ? "enabled" : "disabled"));
+        Log.d(TAG, "Background music enabled: " + enabled);
+        
+        // Only play/pause music if we're in battle mode
+        if (inBattleMode) {
+            if (enabled) {
+                // If we have a paused MediaPlayer, resume it
+                if (mediaPlayer != null) {
+                    try {
+                        if (!mediaPlayer.isPlaying()) {
+                            mediaPlayer.start();
+                            Log.d(TAG, "Resumed paused background music");
+                        }
+                    } catch (IllegalStateException e) {
+                        Log.e(TAG, "Error resuming music", e);
+                        // If resuming fails, try to restart
+                        playBattleMusic();
+                    }
+                } else {
+                    // If no media player exists, start a new one
+                    Log.d(TAG, "Starting new background music");
+                    playBattleMusic();
+                }
+            } else {
+                // Pause the music instead of stopping it
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    Log.d(TAG, "Paused background music");
+                }
+            }
+        } else {
+            Log.d(TAG, "Not in battle mode, music setting saved but not applied");
+        }
+    }
+    
+    /**
+     * Set whether we're currently in battle mode
+     * Music will only play automatically when in battle mode
+     * @param inBattle true if in battle, false otherwise
+     */
+    public void setInBattleMode(boolean inBattle) {
+        this.inBattleMode = inBattle;
+        
+        Log.d(TAG, "Battle mode set to: " + inBattle);
+        
+        // If we're entering battle mode and music is enabled, start playing
+        if (inBattle && backgroundMusicEnabled) {
+            if (mediaPlayer == null || !mediaPlayer.isPlaying()) {
+                Log.d(TAG, "Starting music because entering battle mode");
+                playBattleMusic();
+            }
+        } else if (!inBattle && mediaPlayer != null && mediaPlayer.isPlaying()) {
+            // If we're leaving battle mode, pause the music
+            Log.d(TAG, "Pausing music because leaving battle mode");
+            pauseBackgroundMusic();
+        }
     }
     
     /**
@@ -328,76 +379,126 @@ public class SoundManager {
     }
     
     /**
-     * Play a random battle music track
-     */
-    public void playRandomBattleMusic() {
-        if (!backgroundMusicEnabled) return;
-        
-        // Select a random track from the available battle music tracks
-        int randomIndex = (int) (Math.random() * BATTLE_MUSIC_TRACKS.length);
-        String randomTrack = BATTLE_MUSIC_TRACKS[randomIndex];
-        
-        // Play the selected track
-        playBackgroundMusic(randomTrack);
-        
-        Log.d(TAG, "Playing random battle music: " + randomTrack);
-    }
-    
-    /**
-     * Start playing background music for a battle
+     * Play battle music
      */
     public void playBattleMusic() {
-        if (!backgroundMusicEnabled) return;
+        // Always check if background music is enabled
+        if (!backgroundMusicEnabled) {
+            return;
+        }
         
-        // List of battle music tracks
-        String[] battleTracks = {
-            "colosseum-miror-b",
-            "battle-gen8",
-            "battle-xy", 
-            "battle-sm",
-            "battle-dppt",
-            "battle-rse",
-            "bw-rival",
-            "bw-subway-trainer",
-            "bw-trainer",
-            "bw2-homika-dogars",
-            "bw2-kanto-gym-leader",
-            "bw2-rival",
-            "dpp-rival",
-            "dpp-trainer",
-            "hgss-johto-trainer",
-            "hgss-kanto-trainer",
-            "oras-rival",
-            "oras-trainer",
-            "sm-rival",
-            "sm-trainer",
-            "spl-elite4",
-            "xd-miror-b",
-            "xy-rival",
-            "xy-trainer"
-        };
+        // Only play if in battle mode
+        if (!inBattleMode) {
+            Log.d(TAG, "Not playing battle music because not in battle mode");
+            return;
+        }
         
-        // Select a random track
-        int randomIndex = (int) (Math.random() * battleTracks.length);
-        String randomTrack = battleTracks[randomIndex];
-        
-        Log.d(TAG, "Playing random battle music: " + randomTrack);
-        playBackgroundMusic(randomTrack);
+        Log.d(TAG, "Playing battle music in battle mode");
+        // Play a random battle track
+        playRandomBattleMusic();
     }
     
     /**
-     * Start playing background music
+     * Play a random battle music track
      */
-    public void playBackgroundMusic(String musicName) {
-        if (!backgroundMusicEnabled) return;
+    private void playRandomBattleMusic() {
+        if (!backgroundMusicEnabled) {
+            return;
+        }
         
-        // Stop any currently playing music
-        stopBackgroundMusic();
+        try {
+            // Select a random battle track
+            int randomIndex = (int) (Math.random() * BATTLE_MUSIC_TRACKS.length);
+            String randomTrack = BATTLE_MUSIC_TRACKS[randomIndex];
+            
+            // Play the selected track
+            playBackgroundMusic(randomTrack);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing random battle music", e);
+            // Try a simpler approach as fallback
+            trySimpleRandomTrack();
+        }
+    }
+    
+    /**
+     * Play background music from a URL
+     * @param musicTrack The music track name
+     */
+    public void playBackgroundMusic(String musicTrack) {
+        // Always check if background music is enabled and we're in battle mode
+        if (!backgroundMusicEnabled || !inBattleMode) {
+            Log.d(TAG, "Not playing background music: enabled=" + backgroundMusicEnabled + ", inBattle=" + inBattleMode);
+            return;
+        }
         
-        // Stream music from Pokémon Showdown API
-        String url = SHOWDOWN_AUDIO_BASE_URL + musicName + ".mp3";
-        Log.d(TAG, "Attempting to play background music from URL: " + url);
-        streamBackgroundMusic(url);
+        try {
+            // Check if we're already playing this track
+            if (mediaPlayer != null && currentMusicTrack != null && currentMusicTrack.equals(musicTrack) && mediaPlayer.isPlaying()) {
+                Log.d(TAG, "Already playing " + musicTrack);
+                return;
+            }
+            
+            // Stop any existing music
+            if (mediaPlayer != null) {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.release();
+            }
+            
+            // Create a new media player
+            mediaPlayer = new MediaPlayer();
+            
+            // Set up the media player
+            String url = SHOWDOWN_AUDIO_BASE_URL + musicTrack + ".mp3";
+            Log.d(TAG, "Playing background music: " + url);
+            
+            // Set the audio attributes
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mediaPlayer.setAudioAttributes(
+                    new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_GAME)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                );
+            } else {
+                mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            }
+            
+            // Set the data source and prepare
+            mediaPlayer.setDataSource(url);
+            mediaPlayer.setLooping(true);
+            mediaPlayer.setVolume(volume, volume);
+            
+            // Use asynchronous preparation to avoid UI delays
+            mediaPlayer.prepareAsync();
+            
+            // Set up prepared listener to start playing when ready
+            mediaPlayer.setOnPreparedListener(mp -> {
+                // Start playing immediately if enabled and in battle mode
+                if (backgroundMusicEnabled && inBattleMode) {
+                    mp.start();
+                    Log.d(TAG, "Background music started: " + musicTrack);
+                }
+            });
+            
+            // Set up error listener
+            mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                Log.e(TAG, "Media player error: " + what + ", " + extra);
+                // Try a different track
+                trySimpleRandomTrack();
+                return true;
+            });
+            
+            // Save the current track
+            currentMusicTrack = musicTrack;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing background music", e);
+            // Try a simpler approach as fallback
+            trySimpleRandomTrack();
+        }
     }
     
     /**
@@ -481,55 +582,6 @@ public class SoundManager {
     }
     
     /**
-     * Stream background music from a URL
-     */
-    private void streamBackgroundMusic(String url) {
-        try {
-            // Stop any existing media player
-            stopBackgroundMusic();
-            
-            // Create a new media player
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setAudioAttributes(
-                    new AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-            );
-            
-            // Set the data source to the URL
-            mediaPlayer.setDataSource(url);
-            
-            // Set volume based on user settings
-            mediaPlayer.setVolume(volume, volume);
-            
-            // Loop the background music
-            mediaPlayer.setLooping(true);
-            
-            // Prepare the player asynchronously
-            mediaPlayer.prepareAsync();
-            
-            // Start playing when prepared
-            mediaPlayer.setOnPreparedListener(mp -> {
-                Log.d(TAG, "Background music prepared successfully, starting playback");
-                mp.start();
-            });
-            
-            // Handle errors
-            mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-                Log.e(TAG, "Error streaming background music: what=" + what + ", extra=" + extra + " for URL: " + url);
-                // Try a different track if this one fails
-                trySimpleRandomTrack();
-                return true;
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Exception streaming background music: " + e.getMessage() + " for URL: " + url);
-            // Try a different track if this one fails
-            trySimpleRandomTrack();
-        }
-    }
-    
-    /**
      * Try playing a different random track if the current one fails - simplified version
      */
     private void trySimpleRandomTrack() {
@@ -607,6 +659,64 @@ public class SoundManager {
     }
     
     /**
+     * Reset the background music if it's having issues
+     */
+    private void resetBackgroundMusic() {
+        if (isResettingMusic) return;
+        
+        isResettingMusic = true;
+        
+        try {
+            // Save the current position and track
+            String currentTrack = this.currentMusicTrack;
+            
+            // Stop and release the current player
+            if (mediaPlayer != null) {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.release();
+                mediaPlayer = null;
+            }
+            
+            // Create a new player and restart the music
+            if (currentTrack != null && backgroundMusicEnabled) {
+                Log.d(TAG, "Resetting background music: " + currentTrack);
+                playBackgroundMusic(currentTrack);
+            } else {
+                // If we don't have a track, try playing a random one
+                playBattleMusic();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error resetting background music: " + e.getMessage());
+            // Try a completely new track
+            playBattleMusic();
+        } finally {
+            isResettingMusic = false;
+        }
+    }
+
+    /**
+     * Manually force music to play or pause based on current settings
+     * This can be called from the battle activity to ensure music state is correct
+     */
+    public void updateMusicState() {
+        Log.d(TAG, "Updating music state: inBattleMode=" + inBattleMode + ", backgroundMusicEnabled=" + backgroundMusicEnabled);
+        
+        if (inBattleMode && backgroundMusicEnabled) {
+            // We should be playing music
+            if (mediaPlayer == null || !mediaPlayer.isPlaying()) {
+                Log.d(TAG, "Starting music in updateMusicState");
+                playBattleMusic();
+            }
+        } else if (!backgroundMusicEnabled && mediaPlayer != null && mediaPlayer.isPlaying()) {
+            // We should not be playing music
+            Log.d(TAG, "Pausing music in updateMusicState");
+            pauseBackgroundMusic();
+        }
+    }
+
+    /**
      * Stop background music
      */
     public void stopBackgroundMusic() {
@@ -616,6 +726,16 @@ public class SoundManager {
             }
             mediaPlayer.release();
             mediaPlayer = null;
+            currentMusicTrack = null;
+        }
+    }
+    
+    /**
+     * Pause background music without releasing the MediaPlayer
+     */
+    public void pauseBackgroundMusic() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
         }
     }
     

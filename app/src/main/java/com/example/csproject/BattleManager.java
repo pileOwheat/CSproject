@@ -29,6 +29,8 @@ import com.bumptech.glide.request.target.Target;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONObject;
+
 /**
  * Manager class for handling battle state and UI updates
  */
@@ -151,29 +153,29 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
      */
     @Override
     public void onFaint(String position) {
-        Log.d(TAG, "Faint: " + position);
+        Log.d(TAG, "Pokémon fainted at position: " + position);
         
-        // Mark the Pokémon as fainted
-        PokemonBattleData pokemon = activePokemon.get(position);
-        if (pokemon != null) {
-            pokemon.setFainted();
-
-            // Play the faint sound effect and Pokémon cry
-            SoundManager soundManager = SoundManager.getInstance(activity);
-            
-            // Play the fainted sound effect
-            soundManager.playSoundEffect(SoundManager.SFX_DEFEAT);
-            
-            // Play the Pokémon's cry by its name
-            String pokemonName = pokemon.getName();
-            if (pokemonName != null && !pokemonName.isEmpty()) {
-                soundManager.playPokemonCryByName(pokemonName);
-                Log.d(TAG, "Playing fainted cry for: " + pokemonName);
+        // Update the battle data to reflect the fainted Pokémon
+        if (activePokemon.containsKey(position)) {
+            PokemonBattleData pokemon = activePokemon.get(position);
+            if (pokemon != null) {
+                // Mark the Pokémon as fainted
+                pokemon.setFainted();
+                
+                // Play faint sound effect
+                SoundManager soundManager = SoundManager.getInstance(activity);
+                soundManager.playSoundEffect(SoundManager.SFX_DEFEAT);
+                
+                // Play the Pokémon's cry by its name
+                String pokemonName = pokemon.getName();
+                if (pokemonName != null && !pokemonName.isEmpty()) {
+                    soundManager.playPokemonCryByName(pokemonName);
+                    Log.d(TAG, "Playing fainted cry for: " + pokemonName);
+                }
+                
+                // Update the UI to reflect the fainted Pokémon
+                activity.runOnUiThread(this::updateUI);
             }
-
-            updateUI();
-        } else {
-            Log.w(TAG, "Tried to faint unknown Pokemon at position: " + position);
         }
     }
     
@@ -213,6 +215,29 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
                 battleActivity.refreshBattleControls();
             }
         });
+    }
+    
+    /**
+     * Handle a turn change event
+     * @param turnNumber The current turn number
+     */
+    @Override
+    public void onTurnChange(int turnNumber) {
+        // Handle turn changes in the battle manager
+        Log.d(TAG, "Turn changed to: " + turnNumber);
+        
+        // We can add any battle state updates needed for turn changes here
+    }
+    
+    /**
+     * Called when a new request is received from the server
+     * @param requestJson The JSON object containing the request data
+     */
+    @Override
+    public void onRequest(org.json.JSONObject requestJson) {
+        // BattleManager doesn't need to handle requests directly
+        // The BattleActivity handles the request processing
+        Log.d(TAG, "Request received in BattleManager, forwarding to BattleActivity");
     }
     
     /**
@@ -344,6 +369,39 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
                 .replace("'", "")
                 .replace(":", "");
         
+        // Special handling for paradox Pokémon
+        if (pokemonName.contains("Walking Wake") || pokemonName.contains("WalkingWake")) {
+            formattedName = "walkingwake";
+        } else if (pokemonName.contains("Iron Leaves") || pokemonName.contains("IronLeaves")) {
+            formattedName = "ironleaves";
+        } else if (pokemonName.contains("Iron Moth") || pokemonName.contains("IronMoth")) {
+            formattedName = "ironmoth";
+        } else if (pokemonName.contains("Iron Hands") || pokemonName.contains("IronHands")) {
+            formattedName = "ironhands";
+        } else if (pokemonName.contains("Iron Jugulis") || pokemonName.contains("IronJugulis")) {
+            formattedName = "ironjugulis";
+        } else if (pokemonName.contains("Iron Thorns") || pokemonName.contains("IronThorns")) {
+            formattedName = "ironthorns";
+        } else if (pokemonName.contains("Iron Bundle") || pokemonName.contains("IronBundle")) {
+            formattedName = "ironbundle";
+        } else if (pokemonName.contains("Iron Valiant") || pokemonName.contains("IronValiant")) {
+            formattedName = "ironvaliant";
+        } else if (pokemonName.contains("Roaring Moon") || pokemonName.contains("RoaringMoon")) {
+            formattedName = "roaringmoon";
+        } else if (pokemonName.contains("Great Tusk") || pokemonName.contains("GreatTusk")) {
+            formattedName = "greattusk";
+        } else if (pokemonName.contains("Scream Tail") || pokemonName.contains("ScreamTail")) {
+            formattedName = "screamtail";
+        } else if (pokemonName.contains("Brute Bonnet") || pokemonName.contains("BruteBonnet")) {
+            formattedName = "brutebonnet";
+        } else if (pokemonName.contains("Flutter Mane") || pokemonName.contains("FlutterMane")) {
+            formattedName = "fluttermane";
+        } else if (pokemonName.contains("Slither Wing") || pokemonName.contains("SlitherWing")) {
+            formattedName = "slitherwing";
+        } else if (pokemonName.contains("Sandy Shocks") || pokemonName.contains("SandyShocks")) {
+            formattedName = "sandyshocks";
+        }
+        
         Log.d(TAG, "Loading sprite for " + (isPlayer ? "player" : "opponent") + ": " + pokemonName + " (formatted: " + formattedName + ")");
         
         // Construct the sprite URL - player sprites are back view, opponent sprites are front view
@@ -366,12 +424,34 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
                     
                     // Try a backup URL with a different format - use Handler to post to main thread
                     mainHandler.post(() -> {
-                        String backupUrl = "https://img.pokemondb.net/sprites/home/normal/" + finalFormattedName + ".png";
+                        // Try gen5 sprites first (they have better support for newer Pokémon)
+                        String backupUrl = isPlayer ?
+                                "https://play.pokemonshowdown.com/sprites/gen5-back/" + finalFormattedName + ".png" :
+                                "https://play.pokemonshowdown.com/sprites/gen5/" + finalFormattedName + ".png";
                         
-                        // Use a new Glide request
                         Glide.with(context)
                             .load(backupUrl)
-                            .error(R.drawable.ic_launcher_foreground) // Final fallback
+                            .listener(new RequestListener<Drawable>() {
+                                @Override
+                                public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                                    Log.e("BattleManager", "Failed to load gen5 sprite, trying dex sprites: " + backupUrl);
+                                    
+                                    // Try dex sprites as a last resort
+                                    String dexUrl = "https://play.pokemonshowdown.com/sprites/dex/" + finalFormattedName + ".png";
+                                    
+                                    Glide.with(context)
+                                        .load(dexUrl)
+                                        .error(R.drawable.ic_launcher_foreground) // Final fallback
+                                        .into(targetView);
+                                    
+                                    return true;
+                                }
+
+                                @Override
+                                public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                                    return false; // Let Glide handle the resource
+                                }
+                            })
                             .into(targetView);
                     });
                     
@@ -415,13 +495,26 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
         // Create a value animator to smoothly transition between old and new values
         ValueAnimator animator = ValueAnimator.ofInt(oldValue, newValue);
         
-        // Longer duration for smoother animation, especially for larger health changes
-        int animationDuration = Math.min(1500, 500 + Math.abs(oldValue - newValue) * 10);
+        // Calculate animation duration based on the amount of health change
+        // Larger health drops take longer for more dramatic effect
+        // Minimum 800ms, maximum 2000ms for very large health changes
+        int healthChange = Math.abs(oldValue - newValue);
+        int baseDuration = 800;
+        int variableDuration = healthChange * 20;
+        int animationDuration = Math.min(2000, baseDuration + variableDuration);
+        
         animator.setDuration(animationDuration);
         
-        // Use an AccelerateDecelerateInterpolator for a more natural, smoother animation
-        // This starts slow, speeds up in the middle, and slows down at the end
-        animator.setInterpolator(new AccelerateDecelerateInterpolator());
+        // Use a custom interpolator for more natural health bar movement
+        // For health loss (oldValue > newValue), use DecelerateInterpolator for a "slowing down" effect
+        // For health gain (oldValue < newValue), use AccelerateDecelerateInterpolator for a smoother curve
+        if (oldValue > newValue) {
+            // Health is decreasing - decelerate for dramatic effect
+            animator.setInterpolator(new DecelerateInterpolator(1.5f));
+        } else {
+            // Health is increasing - smooth acceleration and deceleration
+            animator.setInterpolator(new AccelerateDecelerateInterpolator());
+        }
         
         // Update the progress bar as the animation runs
         animator.addUpdateListener(animation -> {
@@ -432,11 +525,15 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
             updateHealthBarColor(healthBar, animatedValue);
         });
         
-        // Request high frame rate for smoother animation
+        // Use vsync for smoother animation rendering
+        animator.setInterpolator(animator.getInterpolator());
+        
+        // Request high frame rate for smoother animation with Choreographer
         Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
             @Override
             public void doFrame(long frameTimeNanos) {
                 if (animator.isRunning()) {
+                    // Force the animator to update on the vsync signal
                     animator.setCurrentPlayTime(animator.getCurrentPlayTime());
                     Choreographer.getInstance().postFrameCallback(this);
                 }

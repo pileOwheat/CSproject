@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+    android:elevation="30dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="@color/battle_ui_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:elevation="30dp">
+
+        <TextView
+            android:id="@+id/findingText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Finding Opponent"
+            android:textSize="22sp"
+            android:textColor="@color/battle_ui_text_primary"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Please wait"
+                android:textSize="20sp"
+                android:textColor="@color/battle_ui_text_primary"/>
+
+            <TextView
+                android:id="@+id/findingDots"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="..."
+                android:textSize="20sp"
+                android:textColor="@color/battle_ui_text_primary"/>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

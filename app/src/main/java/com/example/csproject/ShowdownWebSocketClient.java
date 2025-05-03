@@ -26,6 +26,8 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         void onFaint(String position);
         void onPlayerSlotSet(int slot);
         void onBattleStart(); // New method to handle battle start events
+        void onTurnChange(int turnNumber); // New method to handle turn changes
+        void onRequest(JSONObject requestJson); // New method to handle requests
     }
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -85,15 +87,37 @@ public class ShowdownWebSocketClient extends WebSocketListener {
         return lastRequestJson;
     }
 
+    /**
+     * Get the player's slot in the battle (1 or 2)
+     * @return The player's slot, or -1 if not set yet
+     */
+    public int getPlayerSlot() {
+        return mySlot;
+    }
+    
+    /**
+     * Check if we're currently waiting for the opponent
+     * @return true if waiting for opponent, false otherwise
+     */
+    public boolean isWaitingForOpponent() {
+        return waitingForOpponent;
+    }
+
     @Override
     public void onOpen(WebSocket ws, Response resp) {
         this.webSocket = ws;
         callback.onMessageReceived("✅ Connected to Showdown server");
-
+        
+        // Set waiting for opponent to true when starting search
+        waitingForOpponent = true;
+        
         String guest = "guest" + (int) (Math.random() * 10000);
         ws.send("|/trn " + guest + ",0");
 
         ws.send("|/search randombattle");
+        callback.onMessageReceived("🔍 Searching for a random battle...");
+        
+        // Schedule retry in case the search takes too long
         scheduleRetry();
     }
 
@@ -131,18 +155,19 @@ public class ShowdownWebSocketClient extends WebSocketListener {
     }
 
     private void handleLobbyUpdate(String update) {
-        String[] p = update.split("\\|");
-        if (p.length < 1) return;
-
-        switch (p[0]) {
-            case "updateSearch":
-                // Check if we found a battle
-                if (update.contains("\"searching\":false") && update.contains("\"games\":{")) {
-                    // We found a battle, stop retrying
-                    stopRetryTimer();
-                }
-                break;
-            // Other lobby message types can be handled here
+        // Check if we're still searching for a battle
+        if (update.contains("\"searching\":false") && update.contains("\"games\":{")) {
+            // We found a battle, stop retrying
+            stopRetryTimer();
+            
+            // No longer in the finding opponent state, but we're now waiting for the battle to start
+            waitingForOpponent = true;
+            
+            callback.onMessageReceived("🎮 Found a battle! Waiting for it to start...");
+        } else if (update.contains("\"searching\":true")) {
+            // Still searching
+            waitingForOpponent = true;
+            callback.onMessageReceived("🔍 Searching for a battle...");
         }
     }
 
@@ -203,6 +228,9 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                                 waitingForOpponent = false;
                                 waitingMessageSent = false;
                                 callback.onMessageReceived("⏱️ Turn " + turnNumber);
+                                if (battleDataCallback != null) {
+                                    battleDataCallback.onTurnChange(Integer.parseInt(turnNumber));
+                                }
                             }
                             break;
                         case "inactive":
@@ -339,6 +367,32 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                                 }
                             }
                             break;
+                        case "-terastallize":
+                            // Format: |-terastallize|POKEMON_IDENT|TYPE
+                            if (parts.length >= 4) {
+                                String pokemonIdent = parts[2];
+                                String teraType = parts[3];
+
+                                // Extract position and name
+                                String[] identParts = pokemonIdent.split(":");
+                                if (identParts.length >= 2) {
+                                    String position = identParts[0].trim();
+                                    String pokemonName = identParts[1].trim();
+
+                                    Log.d("ShowdownClient", "Terastallize: " + position + " " + pokemonName + " to " + teraType + " type");
+
+                                    // Check if this is the player's Pokémon or the opponent's
+                                    String playerNum = position.substring(1, 2);
+                                    boolean isPlayer = playerNum.equals(String.valueOf(mySlot));
+                                    String pokemonDisplay = isPlayer ? pokemonName : "The opposing " + pokemonName;
+
+                                    // Create a message for the battle log
+                                    if (callback != null) {
+                                        callback.onMessageReceived("✨ " + pokemonDisplay + " terastallized into " + teraType + " type!");
+                                    }
+                                }
+                            }
+                            break;
                         case "damage":
                         case "-damage":
                         case "heal":
@@ -442,21 +496,28 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                                 try {
                                     lastRequestJson = new JSONObject(parts[2]);
                                     
-                                    // Check if we're waiting for the opponent
+                                    // Check if we're waiting for the opponent's move
                                     if (lastRequestJson.has("wait") && lastRequestJson.getBoolean("wait")) {
                                         waitingForOpponent = true;
-                                        
-                                        // Only send the waiting message once
-                                        if (!waitingMessageSent) {
-                                            callback.onMessageReceived("⌛ Waiting for opponent...");
-                                            waitingMessageSent = true;
-                                        }
                                     } else {
                                         waitingForOpponent = false;
+                                    }
+                                    
+                                    // Only send the waiting message once
+                                    if (waitingForOpponent && !waitingMessageSent) {
+                                        callback.onMessageReceived("⌛ Waiting for opponent...");
+                                        waitingMessageSent = true;
+                                    } else if (!waitingForOpponent) {
                                         waitingMessageSent = false;
                                     }
                                     
-                                    Log.d("ShowdownClient", "Request: " + lastRequestJson.toString());
+                                    // Log that we received a new request
+                                    Log.d("ShowdownClient", "New request received, player can now make a move");
+                                    
+                                    // Notify the battle activity about the new request
+                                    if (battleDataCallback != null) {
+                                        battleDataCallback.onRequest(lastRequestJson);
+                                    }
                                 } catch (JSONException e) {
                                     Log.e("ShowdownClient", "Error parsing request JSON", e);
                                 }

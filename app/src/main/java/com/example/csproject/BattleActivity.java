@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -35,7 +37,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class BattleActivity extends AppCompatActivity {
+public class BattleActivity extends AppCompatActivity implements ShowdownWebSocketClient.BattleDataCallback {
     private static final String TAG = "BattleActivity";
     
     private ScrollView scrollLog;
@@ -62,6 +64,8 @@ public class BattleActivity extends AppCompatActivity {
     
     // Battle manager for handling battle state and UI updates
     private BattleManager battleManager;
+    private BattleWaitingOverlay waitingOverlay;
+    private BattleFindingOverlay findingOverlay;
 
     public static boolean isMenuOpen = false;
     private boolean isFormToggleEnabled = false; // Whether form change is available
@@ -80,10 +84,6 @@ public class BattleActivity extends AppCompatActivity {
         
         setContentView(R.layout.activity_battle);
 
-        // Initialize SoundManager and play random battle music
-        SoundManager soundManager = SoundManager.getInstance(this);
-        soundManager.playBattleMusic();
-        
         scrollLog = findViewById(R.id.scrollLogContainer);
         battleLog = findViewById(R.id.battleLog);
         controlsContainer = findViewById(R.id.controlsContainer);
@@ -108,15 +108,25 @@ public class BattleActivity extends AppCompatActivity {
         // Initialize battle manager
         battleManager = new BattleManager(this, playerPokemonInfo, opponentPokemonInfo, playerHP, opponentHP, playerSprite, opponentSprite);
         
-        wireControlPanels();
+        // Add control views to container
         controlsContainer.addView(viewControls);
         controlsContainer.addView(viewFightOpts);
         controlsContainer.addView(viewPartyOpts);
-
+        
+        // Initialize waiting overlay - do this last so it's on top of other views
+        waitingOverlay = new BattleWaitingOverlay(this, controlsContainer, v -> cancelWaitingAction());
+        
+        // Initialize finding overlay - no cancel button anymore
+        findingOverlay = new BattleFindingOverlay(this, controlsContainer);
+        
+        wireControlPanels();
         setupMoveButtons();
         setupSwitchButtons();
         setupMenuButton();
         initWebSocket();
+        
+        // Set battle mode in SoundManager
+        SoundManager.getInstance(this).setInBattleMode(true);
     }
     
     /**
@@ -164,9 +174,16 @@ public class BattleActivity extends AppCompatActivity {
     private void setupMoveButtons() {
         View.OnClickListener moveClick = v -> {
             int idx = Integer.parseInt(v.getTag().toString());
+            String moveText = ((Button)v).getText().toString().split("\n")[0];
+            
+            // Log this action
+            Log.d(TAG, "Move selected: " + moveText + " (index: " + idx + ")");
+            
+            // Show waiting overlay BEFORE sending the command
+            showWaitingOverlay("You chose: " + moveText);
+            
+            // Send the command to the server
             socketClient.send("/choose move " + idx);
-            viewFightOpts.setVisibility(View.GONE);
-            viewControls.setVisibility(View.VISIBLE);
         };
         for (int i = 1; i <= 4; i++) {
             Button b = viewFightOpts.findViewById(
@@ -219,9 +236,16 @@ public class BattleActivity extends AppCompatActivity {
             }
             int zeroBased = Integer.parseInt(tag.toString());
             int oneBased = zeroBased + 1;
+            String pokemonName = ((Button)v).getText().toString();
+            
+            // Log this action
+            Log.d(TAG, "Switch selected: " + pokemonName + " (index: " + oneBased + ")");
+            
+            // Show waiting overlay BEFORE sending the command
+            showWaitingOverlay("You switched to: " + pokemonName);
+            
+            // Send the command to the server
             socketClient.send("/choose switch " + oneBased);
-            viewPartyOpts.setVisibility(View.GONE);
-            viewControls.setVisibility(View.VISIBLE);
         };
         for (int i = 1; i <= 6; i++) {
             Button b = viewPartyOpts.findViewById(
@@ -236,6 +260,9 @@ public class BattleActivity extends AppCompatActivity {
      * Called when a battle starts or when battle data is updated
      */
     public void refreshBattleControls() {
+        // Hide waiting overlay if it's showing
+        hideWaitingOverlay();
+        
         // Make sure controls are visible
         controlsContainer.setVisibility(View.VISIBLE);
         viewControls.setVisibility(View.VISIBLE);
@@ -430,6 +457,7 @@ public class BattleActivity extends AppCompatActivity {
 
                                 // Set click listener
                                 final int moveIndex = i;
+                                final String finalMoveName = moveName;
                                 moveButtons[i].setOnClickListener(v -> {
                                     // Determine if we need to add a form change command
                                     String command = "/choose move " + (moveIndex + 1);
@@ -438,23 +466,27 @@ public class BattleActivity extends AppCompatActivity {
                                     if (isFormChangeActive) {
                                         if (activePokemon.has("canTerastallize") && !activePokemon.isNull("canTerastallize")) {
                                             command += " terastallize";
+                                            Log.d(TAG, "Adding terastallize to command: " + command);
                                         } else if (activePokemon.has("canMegaEvo") && !activePokemon.isNull("canMegaEvo")) {
                                             command += " mega";
+                                            Log.d(TAG, "Adding mega evolution to command: " + command);
                                         } else if (activePokemon.has("canDynamax") && !activePokemon.isNull("canDynamax")) {
                                             command += " dynamax";
+                                            Log.d(TAG, "Adding dynamax to command: " + command);
                                         } else if (activePokemon.has("canGigantamax") && !activePokemon.isNull("canGigantamax")) {
                                             command += " gigantamax";
+                                            Log.d(TAG, "Adding gigantamax to command: " + command);
                                         } else if (activePokemon.has("canZMove") && !activePokemon.isNull("canZMove")) {
                                             command += " zmove";
+                                            Log.d(TAG, "Adding Z-Move to command: " + command);
                                         }
                                     }
                                     
+                                    // Show waiting overlay BEFORE sending the command
+                                    showWaitingOverlay("You chose: " + finalMoveName);
+                                    
                                     // Send the command
                                     socketClient.send(command);
-                                    
-                                    // Hide fight options and show main controls
-                                    viewFightOpts.setVisibility(View.GONE);
-                                    viewControls.setVisibility(View.VISIBLE);
                                 });
                             } else {
                                 moveButtons[i].setVisibility(View.GONE);
@@ -472,10 +504,8 @@ public class BattleActivity extends AppCompatActivity {
      * Refresh the switch buttons with the latest data from the battle
      */
     private void refreshSwitchButtons() {
-        // Get the latest request data from the socket client
         JSONObject requestJson = socketClient.getLastRequestJson();
         if (requestJson == null) {
-            Log.d("BattleActivity", "No request data available for switch buttons");
             return;
         }
         
@@ -496,6 +526,12 @@ public class BattleActivity extends AppCompatActivity {
                     switchButtons[4] = viewPartyOpts.findViewById(R.id.party5);
                     switchButtons[5] = viewPartyOpts.findViewById(R.id.party6);
                     
+                    // Check if we're waiting for an opponent
+                    boolean isWaitingForOpponent = socketClient.isWaitingForOpponent();
+                    
+                    // Log the waiting state for debugging
+                    Log.d(TAG, "Waiting for opponent: " + isWaitingForOpponent);
+                    
                     // Update each switch button
                     for (int i = 0; i < switchButtons.length; i++) {
                         if (i < pokemon.length()) {
@@ -513,20 +549,72 @@ public class BattleActivity extends AppCompatActivity {
                                 Log.e("BattleActivity", "Error getting Pokemon data", e);
                             }
                             
-                            // Set the button text
-                            switchButtons[i].setText(pokeName);
+                            // Set the button text with level information or "Waiting for Opponent" if waiting
+                            if (isWaitingForOpponent) {
+                                // When waiting for opponent, show "Waiting for Opponent" instead of level
+                                switchButtons[i].setText(pokeName + " (Waiting for Opponent)");
+                            } else {
+                                // Normal display with level information
+                                int level = 100; // Default level
+                                
+                                // Extract level from details if available
+                                if (poke.has("details") && !poke.isNull("details")) {
+                                    String details = poke.getString("details");
+                                    if (details.contains(", L")) {
+                                        try {
+                                            int levelIndex = details.indexOf(", L") + 3;
+                                            int endIndex = details.indexOf(",", levelIndex);
+                                            if (endIndex == -1) endIndex = details.length();
+                                            String levelStr = details.substring(levelIndex, endIndex);
+                                            level = Integer.parseInt(levelStr);
+                                        } catch (Exception e) {
+                                            Log.e(TAG, "Error parsing level from details: " + details, e);
+                                        }
+                                    }
+                                }
+                                
+                                // Set the button text with the level information
+                                if (isActive) {
+                                    switchButtons[i].setText(pokeName + " Lv." + level + " (active)");
+                                } else {
+                                    switchButtons[i].setText(pokeName + " Lv." + level);
+                                }
+                            }
                             
                             // Disable the button if the Pokemon is active or fainted
                             switchButtons[i].setEnabled(!isActive && !isFainted);
                             
+                            // Gray out fainted Pokémon
+                            if (isFainted) {
+                                switchButtons[i].setAlpha(0.5f);
+                                switchButtons[i].setTextColor(getResources().getColor(android.R.color.darker_gray));
+                            } else {
+                                switchButtons[i].setAlpha(1.0f);
+                                switchButtons[i].setTextColor(getResources().getColor(android.R.color.black));
+                            }
+                            
                             // Show the button
                             switchButtons[i].setVisibility(View.VISIBLE);
                             
-                            // Set up the click listener
+                            // Set up the click listener with the proper tag for identification
+                            switchButtons[i].setTag(i);
                             final int pokeIndex = i;
-                            switchButtons[i].setOnClickListener(v -> {
-                                socketClient.send("/switch " + (pokeIndex + 1));
-                                showMainControls();
+                            final Button currentButton = switchButtons[i];
+                            
+                            // Set the click listener to use our main switchClick handler
+                            currentButton.setOnClickListener(v -> {
+                                int zeroBased = pokeIndex;
+                                int oneBased = zeroBased + 1;
+                                String pokemonName = currentButton.getText().toString();
+                                
+                                // Log this action
+                                Log.d(TAG, "Switch selected: " + pokemonName + " (index: " + oneBased + ")");
+                                
+                                // Show waiting overlay BEFORE sending the command
+                                showWaitingOverlay("You switched to: " + pokemonName);
+                                
+                                // Send the command to the server
+                                socketClient.send("/choose switch " + oneBased);
                             });
                         } else {
                             // Hide unused buttons
@@ -603,15 +691,92 @@ public class BattleActivity extends AppCompatActivity {
                         }
                     }
                 }
+                
+                // Hide waiting overlay when it's our turn again
+                if (message.contains("What will") && message.contains("do?")) {
+                    hideWaitingOverlay();
+                }
+                
+                // Hide finding opponent overlay when battle is found
+                if (message.contains("Battle started")) {
+                    hideFindingOpponentOverlay();
+                }
             });
         });
         
         // Set the battle data callback
-        socketClient.setBattleDataCallback(battleManager);
+        socketClient.setBattleDataCallback(this);
+        
+        // Show the finding opponent overlay when connecting
+        showFindingOpponentOverlay();
         
         socketClient.connect();
     }
     
+    /**
+     * Shows the finding opponent overlay when searching for a battle
+     */
+    private void showFindingOpponentOverlay() {
+        runOnUiThread(() -> {
+            Log.d(TAG, "Showing finding opponent overlay");
+            
+            // Make sure all control panels are hidden
+            viewControls.setVisibility(View.GONE);
+            viewFightOpts.setVisibility(View.GONE);
+            viewPartyOpts.setVisibility(View.GONE);
+            
+            // Ensure the controls container is still visible
+            controlsContainer.setVisibility(View.VISIBLE);
+            
+            // Show the finding overlay
+            findingOverlay.show();
+            
+            // Update Pokémon information to show "Waiting for Opponent"
+            updatePokemonInfoForWaiting(true);
+            
+            // Log the action
+            battleLog.append("Searching for an opponent...\n");
+            scrollLog.post(() -> scrollLog.fullScroll(ScrollView.FOCUS_DOWN));
+            
+            // Force layout pass to ensure overlay is visible
+            controlsContainer.requestLayout();
+            controlsContainer.invalidate();
+        });
+    }
+    
+    /**
+     * Hides the finding opponent overlay
+     */
+    private void hideFindingOpponentOverlay() {
+        runOnUiThread(() -> {
+            Log.d(TAG, "Hiding finding opponent overlay");
+            
+            if (findingOverlay != null && findingOverlay.isShowing()) {
+                findingOverlay.hide();
+                
+                // Restore normal Pokémon information display
+                updatePokemonInfoForWaiting(false);
+                
+                // Show the main controls after hiding the overlay
+                showMainControls();
+            }
+        });
+    }
+    
+    /**
+     * Handles the cancel button click in the finding opponent overlay
+     */
+    private void cancelFindingOpponent() {
+        // This method is no longer used since we removed the cancel button
+        // Keeping it for now in case we need to add cancellation via another method
+        if (socketClient != null) {
+            socketClient.send("|/cancelchallenging");
+            socketClient.send("|/cancelsearch");
+        }
+        
+        hideFindingOpponentOverlay();
+    }
+
     private String extractPokemonName(String message) {
         // Extract Pokemon name from battle log message
         if (message.contains("switched in")) {
@@ -743,6 +908,9 @@ public class BattleActivity extends AppCompatActivity {
                     .error(R.drawable.ic_launcher_background) // Fallback if loading fails
                     .into(battleBackground);
             
+            // Start playing battle music
+            SoundManager.getInstance(this).playBattleMusic();
+            
         } catch (Exception e) {
             Log.e(TAG, "Error loading battle background", e);
         }
@@ -775,23 +943,45 @@ public class BattleActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Stop background music when activity is paused
-        SoundManager.getInstance(this).stopBackgroundMusic();
+        // Pause background music when the activity is paused
+        if (SoundManager.getInstance(this) != null) {
+            SoundManager.getInstance(this).pauseBackgroundMusic();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Set battle mode and update music state when the activity comes back to the foreground
+        if (SoundManager.getInstance(this) != null) {
+            Log.d("BattleActivity", "Setting battle mode to true in onResume");
+            SoundManager.getInstance(this).setInBattleMode(true);
+            SoundManager.getInstance(this).updateMusicState();
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Ensure background music is stopped when activity is destroyed
-        SoundManager.getInstance(this).stopBackgroundMusic();
         
-        // Close WebSocket connection
+        // Set battle mode to false when destroying
+        if (SoundManager.getInstance(this) != null) {
+            // Set battle mode to false
+            SoundManager.getInstance(this).setInBattleMode(false);
+            
+            // Stop background music
+            SoundManager.getInstance(this).stopBackgroundMusic();
+            
+            // Release all sound resources
+            SoundManager.getInstance(this).release();
+        }
+        
+        // Close the WebSocket connection
         if (socketClient != null) {
             socketClient.close();
         }
         
-        // Stop background music and release SoundManager resources
-        SoundManager.getInstance(this).stopBackgroundMusic();
+        Log.d(TAG, "BattleActivity destroyed, all audio stopped");
     }
 
     /**
@@ -886,6 +1076,277 @@ public class BattleActivity extends AppCompatActivity {
                 button.setTextColor(buttonTextColor);
             } else if (child instanceof ViewGroup) {
                 updateButtonsRecursively((ViewGroup) child, buttonBackground, buttonTextColor);
+            }
+        }
+    }
+
+    @Override
+    public void onBattleStart() {
+        runOnUiThread(() -> {
+            // Show the main controls when the battle starts
+            viewControls.setVisibility(View.VISIBLE);
+            viewFightOpts.setVisibility(View.GONE);
+            viewPartyOpts.setVisibility(View.GONE);
+            
+            // Hide the waiting overlay if it's visible
+            if (waitingOverlay != null) {
+                waitingOverlay.hide();
+            }
+        });
+    }
+    
+    @Override
+    public void onTurnChange(int turnNumber) {
+        runOnUiThread(() -> {
+            Log.d(TAG, "New turn started: " + turnNumber);
+            
+            // Hide the waiting overlay when a new turn starts
+            if (waitingOverlay != null) {
+                waitingOverlay.hide();
+            }
+            
+            // Show the main controls
+            viewControls.setVisibility(View.VISIBLE);
+            viewFightOpts.setVisibility(View.GONE);
+            viewPartyOpts.setVisibility(View.GONE);
+        });
+    }
+
+    @Override
+    public void onPokemonSwitch(String position, String pokemonName, String details, String hpStatus) {
+        // Forward to the battle manager
+        battleManager.onPokemonSwitch(position, pokemonName, details, hpStatus);
+    }
+
+    @Override
+    public void onHPChange(String position, String hpStatus) {
+        // Forward to the battle manager
+        battleManager.onHPChange(position, hpStatus);
+    }
+
+    @Override
+    public void onFaint(String position) {
+        // Forward to the battle manager
+        battleManager.onFaint(position);
+        
+        // Check if this is the player's Pokémon that fainted
+        String playerNum = position.substring(1, 2);
+        if (playerNum.equals(String.valueOf(socketClient.getPlayerSlot()))) {
+            // Check if we need to force-switch
+            JSONObject requestJson = socketClient.getLastRequestJson();
+            if (requestJson != null) {
+                try {
+                    // Check if the request has forceSwitch field set to true
+                    if (requestJson.has("forceSwitch") && !requestJson.isNull("forceSwitch")) {
+                        JSONArray forceSwitch = requestJson.getJSONArray("forceSwitch");
+                        if (forceSwitch.length() > 0 && forceSwitch.getBoolean(0)) {
+                            // We need to force-switch, show the party options immediately
+                            runOnUiThread(() -> {
+                                Log.d(TAG, "Force-switch required after faint, showing party options");
+                                
+                                // Hide any waiting overlay if it's showing
+                                if (waitingOverlay != null && waitingOverlay.isShowing()) {
+                                    waitingOverlay.hide();
+                                }
+                                
+                                // Show the party options and hide other controls
+                                viewControls.setVisibility(View.GONE);
+                                viewFightOpts.setVisibility(View.GONE);
+                                viewPartyOpts.setVisibility(View.VISIBLE);
+                                
+                                // Refresh the switch buttons to show current state
+                                refreshSwitchButtons();
+                            });
+                        }
+                    }
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error checking for force-switch after faint", e);
+                }
+            }
+        }
+    }
+    
+    @Override
+    public void onPlayerSlotSet(int slot) {
+        // Forward to the battle manager
+        battleManager.onPlayerSlotSet(slot);
+    }
+
+    /**
+     * Called when a new request is received from the server
+     * This is a good place to check for forced switches from moves like U-turn
+     */
+    public void onRequest(JSONObject requestJson) {
+        // Check if we need to force-switch due to a move like U-turn
+        if (requestJson != null) {
+            try {
+                // Check if the request has forceSwitch field set to true
+                if (requestJson.has("forceSwitch") && !requestJson.isNull("forceSwitch")) {
+                    JSONArray forceSwitch = requestJson.getJSONArray("forceSwitch");
+                    if (forceSwitch.length() > 0 && forceSwitch.getBoolean(0)) {
+                        // We need to force-switch, show the party options immediately
+                        runOnUiThread(() -> {
+                            Log.d(TAG, "Force-switch required after move (like U-turn), showing party options");
+                            
+                            // Hide any waiting overlay if it's showing
+                            if (waitingOverlay != null && waitingOverlay.isShowing()) {
+                                waitingOverlay.hide();
+                            }
+                            
+                            // Show the party options and hide other controls
+                            viewControls.setVisibility(View.GONE);
+                            viewFightOpts.setVisibility(View.GONE);
+                            viewPartyOpts.setVisibility(View.VISIBLE);
+                            
+                            // Refresh the switch buttons to show current state
+                            refreshSwitchButtons();
+                        });
+                    }
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "Error checking for force-switch after move", e);
+            }
+        }
+    }
+
+    /**
+     * Shows the waiting overlay with the specified action text
+     */
+    private void showWaitingOverlay(String actionText) {
+        runOnUiThread(() -> {
+            Log.d(TAG, "Showing waiting overlay: " + actionText);
+            
+            // Make sure all control panels are hidden
+            viewControls.setVisibility(View.GONE);
+            viewFightOpts.setVisibility(View.GONE);
+            viewPartyOpts.setVisibility(View.GONE);
+            
+            // Ensure the controls container is still visible
+            controlsContainer.setVisibility(View.VISIBLE);
+            
+            // Ensure the overlay is properly initialized
+            if (waitingOverlay == null) {
+                waitingOverlay = new BattleWaitingOverlay(this, controlsContainer, v -> cancelWaitingAction());
+            }
+            
+            // Show the waiting overlay
+            waitingOverlay.show(actionText);
+            
+            // Log the action
+            battleLog.append(actionText + "\n");
+            scrollLog.post(() -> scrollLog.fullScroll(ScrollView.FOCUS_DOWN));
+            
+            // Force layout pass to ensure overlay is visible
+            controlsContainer.requestLayout();
+            controlsContainer.invalidate();
+        });
+    }
+    
+    /**
+     * Hides the waiting overlay
+     */
+    private void hideWaitingOverlay() {
+        runOnUiThread(() -> {
+            Log.d(TAG, "Hiding waiting overlay");
+            
+            if (waitingOverlay != null && waitingOverlay.isShowing()) {
+                waitingOverlay.hide();
+                
+                // Show the main controls after hiding the overlay
+                showMainControls();
+            }
+        });
+    }
+    
+    /**
+     * Handles the cancel button click in the waiting overlay
+     */
+    private void cancelWaitingAction() {
+        // Send a cancel command to the server
+        socketClient.send("/cancel");
+        
+        // Hide the overlay
+        hideWaitingOverlay();
+        
+        // Show the main controls
+        showMainControls();
+        
+        // Log the cancellation
+        battleLog.append("You canceled your action.\n");
+        scrollLog.post(() -> scrollLog.fullScroll(ScrollView.FOCUS_DOWN));
+    }
+
+    /**
+     * Updates the Pokémon information display based on waiting state
+     * @param isWaiting true if waiting for opponent, false otherwise
+     */
+    private void updatePokemonInfoForWaiting(boolean isWaiting) {
+        if (isWaiting) {
+            // Replace player and opponent Pokémon info with "Waiting for Opponent"
+            playerPokemonInfo.setText("Waiting for Opponent");
+            opponentPokemonInfo.setText("Waiting for Opponent");
+            
+            // Also refresh switch buttons to show waiting status
+            refreshSwitchButtons();
+            
+            Log.d(TAG, "Updated Pokémon info to show 'Waiting for Opponent'");
+        } else {
+            // Restore normal display - get data from battle manager if available
+            JSONObject requestJson = socketClient.getLastRequestJson();
+            if (requestJson != null) {
+                try {
+                    // Update player Pokémon info
+                    if (requestJson.has("side") && !requestJson.isNull("side")) {
+                        JSONObject side = requestJson.getJSONObject("side");
+                        if (side.has("pokemon") && !side.isNull("pokemon")) {
+                            JSONArray pokemon = side.getJSONArray("pokemon");
+                            if (pokemon.length() > 0) {
+                                for (int i = 0; i < pokemon.length(); i++) {
+                                    JSONObject poke = pokemon.getJSONObject(i);
+                                    if (poke.has("active") && poke.getBoolean("active")) {
+                                        String pokeName = poke.getString("ident").split(":")[1];
+                                        int level = 100; // Default level
+                                        
+                                        // Extract level from details if available
+                                        if (poke.has("details") && !poke.isNull("details")) {
+                                            String details = poke.getString("details");
+                                            if (details.contains(", L")) {
+                                                try {
+                                                    int levelIndex = details.indexOf(", L") + 3;
+                                                    int endIndex = details.indexOf(",", levelIndex);
+                                                    if (endIndex == -1) endIndex = details.length();
+                                                    String levelStr = details.substring(levelIndex, endIndex);
+                                                    level = Integer.parseInt(levelStr);
+                                                } catch (Exception e) {
+                                                    Log.e(TAG, "Error parsing level from details: " + details, e);
+                                                }
+                                            }
+                                        }
+                                        
+                                        playerPokemonInfo.setText(pokeName + " Lv." + level);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Update opponent Pokémon info if available
+                    if (requestJson.has("opponent") && !requestJson.isNull("opponent")) {
+                        JSONObject opponent = requestJson.getJSONObject("opponent");
+                        if (opponent.has("activePokemon") && !opponent.isNull("activePokemon")) {
+                            String opponentPokemon = opponent.getString("activePokemon");
+                            opponentPokemonInfo.setText(opponentPokemon);
+                        }
+                    }
+                    
+                    // Also refresh switch buttons to show normal status
+                    refreshSwitchButtons();
+                    
+                    Log.d(TAG, "Restored normal Pokémon info display");
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error updating Pokémon info after waiting", e);
+                }
             }
         }
     }
