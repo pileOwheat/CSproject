@@ -29,7 +29,6 @@ public class MainActivity extends AppCompatActivity {
         SoundManager.getInstance(this).setInBattleMode(false);
 
         Button startButton = findViewById(R.id.buttonStartBattle);//start battle
-        Button joinSpectatorButton = findViewById(R.id.buttonJoinSpectator);
         Button settingsButton = findViewById(R.id.buttonSettings);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -41,13 +40,6 @@ public class MainActivity extends AppCompatActivity {
         //intent for startbutton(will switch to battleactivity)
         startButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, BattleActivity.class);
-            startActivity(intent);
-        });
-
-        //intent for join spectator button
-        joinSpectatorButton.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, BattleActivity.class);
-            intent.putExtra("spectator_mode", true); // flag that will be checked in battleActivity
             startActivity(intent);
         });
         
