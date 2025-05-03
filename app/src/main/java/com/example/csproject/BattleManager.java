@@ -1,12 +1,16 @@
 package com.example.csproject;
 
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.Choreographer;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -116,11 +120,26 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
     public void onHPChange(String position, String hpStatus) {
         Log.d(TAG, "HP Change: " + position + " " + hpStatus);
         
-        // Update the Pokémon's HP
         PokemonBattleData pokemon = activePokemon.get(position);
         if (pokemon != null) {
+            // Store old HP percentage for animation
+            int oldHPPercentage = pokemon.getHPPercentage();
+            
+            // Update HP
             pokemon.updateHP(hpStatus);
-            updateUI();
+            
+            // Get new HP percentage
+            int newHPPercentage = pokemon.getHPPercentage();
+            
+            // Check if this is the player's Pokémon and if health is now low
+            boolean isPlayerPokemon = position.startsWith("p" + playerSlot);
+            if (isPlayerPokemon && oldHPPercentage > 20 && newHPPercentage <= 20) {
+                // Play low health sound when health becomes critical
+                SoundManager soundManager = SoundManager.getInstance(activity);
+                soundManager.playSoundEffect(SoundManager.SFX_NOT_EFFECTIVE);
+            }
+            
+            updateUI(oldHPPercentage, position);
         } else {
             Log.w(TAG, "Tried to update HP for unknown Pokemon at position: " + position);
         }
@@ -200,6 +219,15 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
      * Update the UI with the current battle state
      */
     private void updateUI() {
+        updateUI(-1, null);
+    }
+    
+    /**
+     * Update the UI with the current battle state and animate health changes
+     * @param oldHPPercentage The previous HP percentage for animation, or -1 if no animation
+     * @param changedPosition The position that changed, or null if not applicable
+     */
+    private void updateUI(int oldHPPercentage, String changedPosition) {
         // Find player and opponent Pokémon
         final PokemonBattleData playerPokemon = findPokemonByPosition("p" + playerSlot + "a");
         final PokemonBattleData opponentPokemon = findPokemonByPosition("p" + (3 - playerSlot) + "a");
@@ -213,7 +241,21 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
             if (playerPokemon != null) {
                 Log.d(TAG, "Player Pokemon: " + playerPokemon.getName() + " HP: " + playerPokemon.getHPPercentage() + "%");
                 playerPokemonInfo.setText(playerPokemon.getName() + " Lv." + playerPokemon.getLevel());
-                playerHP.setProgress(playerPokemon.getHPPercentage());
+                
+                // Determine if this Pokémon's HP changed
+                boolean animatePlayerHP = changedPosition != null && 
+                                         changedPosition.startsWith("p" + playerSlot) && 
+                                         oldHPPercentage >= 0;
+                
+                // Update health bar color based on health percentage
+                updateHealthBarColor(playerHP, playerPokemon.getHPPercentage());
+                
+                // Animate HP change if needed
+                if (animatePlayerHP) {
+                    animateHealthChange(playerHP, oldHPPercentage, playerPokemon.getHPPercentage());
+                } else {
+                    playerHP.setProgress(playerPokemon.getHPPercentage());
+                }
                 
                 // Only load player sprite if the ImageView is empty or if this is a new Pokémon
                 if (playerSprite.getTag() == null || !playerPokemon.getName().equals(playerSprite.getTag().toString())) {
@@ -228,7 +270,21 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
             if (opponentPokemon != null) {
                 Log.d(TAG, "Opponent Pokemon: " + opponentPokemon.getName() + " HP: " + opponentPokemon.getHPPercentage() + "%");
                 opponentPokemonInfo.setText(opponentPokemon.getName() + " Lv." + opponentPokemon.getLevel());
-                opponentHP.setProgress(opponentPokemon.getHPPercentage());
+                
+                // Determine if this Pokémon's HP changed
+                boolean animateOpponentHP = changedPosition != null && 
+                                           changedPosition.startsWith("p" + (3 - playerSlot)) && 
+                                           oldHPPercentage >= 0;
+                
+                // Update health bar color based on health percentage
+                updateHealthBarColor(opponentHP, opponentPokemon.getHPPercentage());
+                
+                // Animate HP change if needed
+                if (animateOpponentHP) {
+                    animateHealthChange(opponentHP, oldHPPercentage, opponentPokemon.getHPPercentage());
+                } else {
+                    opponentHP.setProgress(opponentPokemon.getHPPercentage());
+                }
                 
                 // Only load opponent sprite if the ImageView is empty or if this is a new Pokémon
                 if (opponentSprite.getTag() == null || !opponentPokemon.getName().equals(opponentSprite.getTag().toString())) {
@@ -329,5 +385,65 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
             })
             .error(R.drawable.ic_launcher_foreground) // Fallback if loading fails
             .into(targetView);
+    }
+    
+    /**
+     * Update the health bar color based on the health percentage
+     * @param healthBar The health bar to update
+     * @param healthPercentage The current health percentage
+     */
+    private void updateHealthBarColor(ProgressBar healthBar, int healthPercentage) {
+        if (healthPercentage > 50) {
+            // Green for good health (> 50%)
+            healthBar.setProgressDrawable(activity.getResources().getDrawable(R.drawable.health_bar_drawable));
+        } else if (healthPercentage > 20) {
+            // Yellow for moderate health (20-50%)
+            healthBar.setProgressDrawable(activity.getResources().getDrawable(R.drawable.health_bar_yellow));
+        } else {
+            // Red for low health (< 20%)
+            healthBar.setProgressDrawable(activity.getResources().getDrawable(R.drawable.health_bar_red));
+        }
+    }
+    
+    /**
+     * Animate a health change from old value to new value
+     * @param healthBar The health bar to animate
+     * @param oldValue The old health percentage
+     * @param newValue The new health percentage
+     */
+    private void animateHealthChange(ProgressBar healthBar, int oldValue, int newValue) {
+        // Create a value animator to smoothly transition between old and new values
+        ValueAnimator animator = ValueAnimator.ofInt(oldValue, newValue);
+        
+        // Longer duration for smoother animation, especially for larger health changes
+        int animationDuration = Math.min(1500, 500 + Math.abs(oldValue - newValue) * 10);
+        animator.setDuration(animationDuration);
+        
+        // Use an AccelerateDecelerateInterpolator for a more natural, smoother animation
+        // This starts slow, speeds up in the middle, and slows down at the end
+        animator.setInterpolator(new AccelerateDecelerateInterpolator());
+        
+        // Update the progress bar as the animation runs
+        animator.addUpdateListener(animation -> {
+            int animatedValue = (int) animation.getAnimatedValue();
+            healthBar.setProgress(animatedValue);
+            
+            // Update color during animation if needed
+            updateHealthBarColor(healthBar, animatedValue);
+        });
+        
+        // Request high frame rate for smoother animation
+        Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
+            @Override
+            public void doFrame(long frameTimeNanos) {
+                if (animator.isRunning()) {
+                    animator.setCurrentPlayTime(animator.getCurrentPlayTime());
+                    Choreographer.getInstance().postFrameCallback(this);
+                }
+            }
+        });
+        
+        // Start the animation
+        animator.start();
     }
 }

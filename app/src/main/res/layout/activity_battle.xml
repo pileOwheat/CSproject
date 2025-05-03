@@ -136,7 +136,7 @@
                                 style="@android:style/Widget.ProgressBar.Horizontal"
                                 android:layout_width="match_parent"
                                 android:layout_height="12dp"
-                                android:progressDrawable="@android:drawable/progress_horizontal"
+                                android:progressDrawable="@drawable/health_bar_drawable"
                                 android:progress="100" />
                         </LinearLayout>
                     </LinearLayout>
@@ -209,7 +209,7 @@
                                 style="@android:style/Widget.ProgressBar.Horizontal"
                                 android:layout_width="match_parent"
                                 android:layout_height="12dp"
-                                android:progressDrawable="@android:drawable/progress_horizontal"
+                                android:progressDrawable="@drawable/health_bar_drawable"
                                 android:progress="100" />
                         </LinearLayout>
                     </LinearLayout>
