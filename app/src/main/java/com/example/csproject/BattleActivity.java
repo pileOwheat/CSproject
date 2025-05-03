@@ -1,9 +1,13 @@
 package com.example.csproject;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -15,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
@@ -65,6 +70,9 @@ public class BattleActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply theme before super.onCreate
+        applyThemeFromPreferences();
+        
         super.onCreate(savedInstanceState);
         
         // Enable immersive game mode to hide system UI
@@ -72,6 +80,10 @@ public class BattleActivity extends AppCompatActivity {
         
         setContentView(R.layout.activity_battle);
 
+        // Initialize SoundManager and play random battle music
+        SoundManager soundManager = SoundManager.getInstance(this);
+        soundManager.playBattleMusic();
+        
         scrollLog = findViewById(R.id.scrollLogContainer);
         battleLog = findViewById(R.id.battleLog);
         controlsContainer = findViewById(R.id.controlsContainer);
@@ -105,6 +117,19 @@ public class BattleActivity extends AppCompatActivity {
         setupSwitchButtons();
         setupMenuButton();
         initWebSocket();
+    }
+    
+    /**
+     * Applies the theme based on saved preferences
+     */
+    private void applyThemeFromPreferences() {
+        SharedPreferences sharedPreferences = getSharedPreferences("PokemonBattlePrefs", Context.MODE_PRIVATE);
+        boolean isDarkMode = sharedPreferences.getBoolean("dark_mode", false);
+        
+        // Set the night mode without recreating the activity
+        // This is only used during initial activity creation
+        AppCompatDelegate.setDefaultNightMode(
+            isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
     }
 
     private void wireControlPanels() {
@@ -561,7 +586,7 @@ public class BattleActivity extends AppCompatActivity {
     }
 
     private void initWebSocket() {
-        socketClient = new ShowdownWebSocketClient(message -> {
+        socketClient = new ShowdownWebSocketClient(this, message -> {
             runOnUiThread(() -> {
                 battleLog.append(message + "\n");
                 // Scroll to the bottom when new messages are added
@@ -604,57 +629,23 @@ public class BattleActivity extends AppCompatActivity {
     private void loadPokemonSprite(String pokemonName, boolean isPlayer) {
         if (pokemonName == null || pokemonName.isEmpty()) return;
         
-        // Format the Pokemon name for the URL (lowercase, remove spaces and special chars)
-        String formattedName = pokemonName.toLowerCase().replaceAll("[^a-z0-9]", "");
-        
-        // Handle special cases for Gen 9 Pokémon that have different naming conventions
-        // Paradox Pokémon
-        if (formattedName.contains("iron")) {
-            formattedName = formattedName.replace("iron", "iron-");
-        } else if (formattedName.equals("greattusk")) {
-            formattedName = "great-tusk";
-        } else if (formattedName.equals("brutebonnet")) {
-            formattedName = "brute-bonnet";
-        } else if (formattedName.equals("sandyshocks")) {
-            formattedName = "sandy-shocks";
-        } else if (formattedName.equals("slitherwing")) {
-            formattedName = "slither-wing";
-        } else if (formattedName.equals("roaringmoon")) {
-            formattedName = "roaring-moon";
-        } else if (formattedName.equals("fluttermane")) {
-            formattedName = "flutter-mane";
-        } else if (formattedName.equals("screamtail")) {
-            formattedName = "scream-tail";
-        } else if (formattedName.equals("walkingwake")) {
-            formattedName = "walking-wake";
-        } else if (formattedName.equals("gougingfire")) {
-            formattedName = "gouging-fire";
-        } else if (formattedName.equals("ragingbolt")) {
-            formattedName = "raging-bolt";
-        } else if (formattedName.equals("ironleaves")) {
-            formattedName = "iron-leaves";
-        } else if (formattedName.equals("wormadam")) {
-            // Handle Wormadam forms
-            formattedName = "wormadam-plant";
-        }
-        
-        Log.d(TAG, "Formatted Pokémon name: " + formattedName);
-        
+
+
         // Try loading animated sprite first from gen 8 animations
-        String animatedUrl = isPlayer 
-            ? "https://play.pokemonshowdown.com/sprites/ani-back/" + formattedName + ".gif"
-            : "https://play.pokemonshowdown.com/sprites/ani/" + formattedName + ".gif";
-            
+        String animatedUrl = isPlayer
+            ? "https://play.pokemonshowdown.com/sprites/ani-back/"  + ".gif"
+            : "https://play.pokemonshowdown.com/sprites/ani/"  + ".gif";
+
         // Fallback to static sprite if animated fails
         String staticUrl = isPlayer
-            ? "https://play.pokemonshowdown.com/sprites/gen5-back/" + formattedName + ".png"
-            : "https://play.pokemonshowdown.com/sprites/gen5/" + formattedName + ".png";
-        
+            ? "https://play.pokemonshowdown.com/sprites/gen5-back/"  + ".png"
+            : "https://play.pokemonshowdown.com/sprites/gen5/"  + ".png";
+
         // Second fallback for newer Pokémon (Gen 9) that might only be in dex sprites
-        String dexUrl = "https://play.pokemonshowdown.com/sprites/dex/" + formattedName + ".png";
-        
+        String dexUrl = "https://play.pokemonshowdown.com/sprites/dex/" + ".png";
+
         // Third fallback for any missing Pokémon - use the official artwork
-        String officialArtUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/" + getPokemonIdByName(formattedName) + ".png";
+        String officialArtUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"  + ".png";
         
         Log.d(TAG, "Attempting to load sprite for: " + pokemonName);
         Log.d(TAG, "Animated URL: " + animatedUrl);
@@ -782,8 +773,120 @@ public class BattleActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop background music when activity is paused
+        SoundManager.getInstance(this).stopBackgroundMusic();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        socketClient.close();
+        // Ensure background music is stopped when activity is destroyed
+        SoundManager.getInstance(this).stopBackgroundMusic();
+        
+        // Close WebSocket connection
+        if (socketClient != null) {
+            socketClient.close();
+        }
+        
+        // Stop background music and release SoundManager resources
+        SoundManager.getInstance(this).stopBackgroundMusic();
+    }
+
+    /**
+     * Updates UI elements for theme changes without restarting the activity
+     * Called by SettingsFragment when dark mode is toggled
+     */
+    public void updateUIForThemeChange() {
+        // Apply the theme directly to the activity
+        getDelegate().setLocalNightMode(
+            AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+                ? AppCompatDelegate.MODE_NIGHT_YES
+                : AppCompatDelegate.MODE_NIGHT_NO
+        );
+        
+        // Force apply the theme
+        getDelegate().applyDayNight();
+        
+        // Refresh all views in the activity
+        refreshAllViews();
+    }
+    
+    /**
+     * Refreshes all views in the activity to apply the new theme
+     */
+    private void refreshAllViews() {
+        // Get the root view
+        ViewGroup root = (ViewGroup) getWindow().getDecorView().findViewById(android.R.id.content);
+        
+        // Recreate all views with the new theme
+        recreateView(root);
+        
+        // Refresh specific UI components
+        refreshBattleControls();
+        
+        // Force layout pass
+        root.requestLayout();
+    }
+    
+    /**
+     * Recursively recreates a view and all its children with the new theme
+     */
+    private void recreateView(View view) {
+        if (view == null) return;
+        
+        // Apply theme to this view
+        view.setBackgroundResource(android.R.color.transparent);
+        
+        // Force redraw
+        view.invalidate();
+        
+        // If this is a ViewGroup, apply to all children
+        if (view instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) view;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                recreateView(viewGroup.getChildAt(i));
+            }
+        }
+        
+        // Invalidate the parent view group
+        view.invalidate();
+    }
+    
+    /**
+     * Updates all buttons in the battle screen with the current theme colors
+     */
+    private void updateAllButtons() {
+        // Get button colors from theme
+        TypedValue typedValue = new TypedValue();
+        getTheme().resolveAttribute(R.attr.buttonBackgroundColor, typedValue, true);
+        int buttonBackground = typedValue.data;
+        
+        getTheme().resolveAttribute(R.attr.buttonTextColor, typedValue, true);
+        int buttonTextColor = typedValue.data;
+        
+        // Find all buttons in the layout and update their colors
+        ViewGroup rootView = findViewById(android.R.id.content);
+        updateButtonsRecursively(rootView, buttonBackground, buttonTextColor);
+    }
+    
+    /**
+     * Recursively updates all buttons in a view hierarchy
+     */
+    private void updateButtonsRecursively(ViewGroup viewGroup, int buttonBackground, int buttonTextColor) {
+        if (viewGroup == null) return;
+        
+        for (int i = 0; i < viewGroup.getChildCount(); i++) {
+            View child = viewGroup.getChildAt(i);
+            
+            if (child instanceof Button) {
+                Button button = (Button) child;
+                button.setBackgroundColor(buttonBackground);
+                button.setTextColor(buttonTextColor);
+            } else if (child instanceof ViewGroup) {
+                updateButtonsRecursively((ViewGroup) child, buttonBackground, buttonTextColor);
+            }
+        }
     }
 }

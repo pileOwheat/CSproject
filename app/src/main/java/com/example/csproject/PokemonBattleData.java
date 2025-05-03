@@ -133,4 +133,120 @@ public class PokemonBattleData {
     public int getMaxHP() {
         return maxHP;
     }
+    
+    /**
+     * Get the Pokémon's National Dex number based on its name
+     * @return The dex number, or 0 if it couldn't be determined
+     */
+    public int getDexNumber() {
+        // This is a simplified implementation - in a real app, you would have a complete mapping
+        // of Pokémon names to dex numbers or use an API
+        
+        // Extract species name from details if available
+        String speciesName = name;
+        if (details != null && !details.isEmpty()) {
+            int commaIndex = details.indexOf(",");
+            if (commaIndex > 0) {
+                speciesName = details.substring(0, commaIndex).trim();
+            }
+        }
+        
+        // Handle special forms by using the base form's cry
+        if (speciesName.contains("-")) {
+            speciesName = speciesName.substring(0, speciesName.indexOf("-"));
+        }
+        
+        // Convert name to lowercase for case-insensitive comparison
+        String pokemonName = speciesName.toLowerCase();
+        
+        // Map of some common Pokémon names to their dex numbers
+        // This is just a small sample - a real implementation would have all Pokémon
+        switch (pokemonName) {
+            case "bulbasaur": return 1;
+            case "ivysaur": return 2;
+            case "venusaur": return 3;
+            case "charmander": return 4;
+            case "charmeleon": return 5;
+            case "charizard": return 6;
+            case "squirtle": return 7;
+            case "wartortle": return 8;
+            case "blastoise": return 9;
+            case "pikachu": return 25;
+            case "raichu": return 26;
+            case "nidoran-f": return 29;
+            case "nidoran-m": return 32;
+            case "jigglypuff": return 39;
+            case "zubat": return 41;
+            case "oddish": return 43;
+            case "meowth": return 52;
+            case "psyduck": return 54;
+            case "growlithe": return 58;
+            case "machop": return 66;
+            case "tentacool": return 72;
+            case "geodude": return 74;
+            case "ponyta": return 77;
+            case "slowpoke": return 79;
+            case "magnemite": return 81;
+            case "farfetchd": return 83;
+            case "doduo": return 84;
+            case "seel": return 86;
+            case "grimer": return 88;
+            case "shellder": return 90;
+            case "gastly": return 92;
+            case "onix": return 95;
+            case "drowzee": return 96;
+            case "krabby": return 98;
+            case "voltorb": return 100;
+            case "exeggcute": return 102;
+            case "cubone": return 104;
+            case "hitmonlee": return 106;
+            case "hitmonchan": return 107;
+            case "koffing": return 109;
+            case "rhyhorn": return 111;
+            case "chansey": return 113;
+            case "tangela": return 114;
+            case "kangaskhan": return 115;
+            case "horsea": return 116;
+            case "goldeen": return 118;
+            case "staryu": return 120;
+            case "scyther": return 123;
+            case "jynx": return 124;
+            case "electabuzz": return 125;
+            case "magmar": return 126;
+            case "pinsir": return 127;
+            case "tauros": return 128;
+            case "magikarp": return 129;
+            case "gyarados": return 130;
+            case "lapras": return 131;
+            case "ditto": return 132;
+            case "eevee": return 133;
+            case "vaporeon": return 134;
+            case "jolteon": return 135;
+            case "flareon": return 136;
+            case "porygon": return 137;
+            case "omanyte": return 138;
+            case "kabuto": return 140;
+            case "aerodactyl": return 142;
+            case "snorlax": return 143;
+            case "articuno": return 144;
+            case "zapdos": return 145;
+            case "moltres": return 146;
+            case "dratini": return 147;
+            case "dragonair": return 148;
+            case "dragonite": return 149;
+            case "mewtwo": return 150;
+            case "mew": return 151;
+            // Gen 2 starters
+            case "chikorita": return 152;
+            case "cyndaquil": return 155;
+            case "totodile": return 158;
+            // Other popular Pokémon
+            case "lugia": return 249;
+            case "ho-oh": return 250;
+            case "celebi": return 251;
+            default:
+                Log.d(TAG, "Unknown Pokémon for cry: " + pokemonName);
+                return 0;
+        }
+    }
 }

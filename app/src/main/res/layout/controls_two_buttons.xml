@@ -6,13 +6,13 @@
     android:layout_height="wrap_content"
     android:gravity="center_horizontal"
     android:padding="16dp"
-    android:background="#e3e3e3">
+    android:background="@color/battle_ui_background">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="What will you do?"
-        android:textColor="#444444"
+        android:textColor="@color/battle_ui_text_primary"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
@@ -28,8 +28,8 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="Fight"
-            android:textColor="#ffffff"
-            android:backgroundTint="#ff5252"
+            android:textColor="@color/battle_button_text"
+            android:backgroundTint="@color/battle_button_fight"
             android:layout_margin="4dp"/>
 
         <Button
@@ -38,8 +38,8 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="Party"
-            android:textColor="#ffffff"
-            android:backgroundTint="#59a559"
+            android:textColor="@color/battle_button_text"
+            android:backgroundTint="@color/battle_button_party"
             android:layout_margin="4dp"/>
     </LinearLayout>
 </LinearLayout>

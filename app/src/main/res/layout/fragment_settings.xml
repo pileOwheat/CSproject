@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/settingsContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/android:colorBackground"
+    android:padding="16dp">
+
+    <!-- Settings Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="?attr/cardBackgroundColor"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp"
+        android:elevation="4dp">
+        
+        <ImageView
+            android:id="@+id/btnBackFromSettings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_revert"
+            app:tint="?attr/android:textColorPrimary"
+            android:layout_gravity="start"
+            android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textColor="?attr/android:textColorPrimary"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"/>
+            
+        <View
+            android:layout_width="100dp"
+            android:layout_height="2dp"
+            android:background="@color/accent"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"/>
+    </LinearLayout>
+
+    <!-- Settings Options -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Theme Settings -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="?attr/cardBackgroundColor"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Display"
+                    android:textColor="?attr/android:textColorPrimary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp"/>
+                
+                <!-- Dark Mode Toggle -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+                    
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Dark Mode"
+                        android:textColor="?attr/android:textColorSecondary"
+                        android:textSize="16sp"/>
+                    
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchDarkMode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        app:thumbTint="@color/button_background"
+                        app:trackTint="@color/primary_light"/>
+                </LinearLayout>
+            </LinearLayout>
+            
+            <!-- Sound Settings -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="?attr/cardBackgroundColor"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sound"
+                    android:textColor="?attr/android:textColorPrimary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp"/>
+                
+                <!-- Sound Volume -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="16dp">
+                    
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sound Volume"
+                        android:textColor="?attr/android:textColorSecondary"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="8dp"/>
+                    
+                    <SeekBar
+                        android:id="@+id/seekBarVolume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"
+                        android:progress="80"/>
+                    
+                    <TextView
+                        android:id="@+id/textVolumeValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="80%"
+                        android:textColor="?attr/android:textColorTertiary"
+                        android:textSize="14sp"
+                        android:gravity="end"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+                
+                <!-- Sound Effects Toggle -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+                    
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Sound Effects"
+                        android:textColor="?attr/android:textColorSecondary"
+                        android:textSize="16sp"/>
+                    
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchSoundEffects"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        app:thumbTint="@color/button_background"
+                        app:trackTint="@color/primary_light"/>
+                </LinearLayout>
+                
+                <!-- Background Music Toggle -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Background Music"
+                        android:textColor="?attr/android:textColorSecondary"
+                        android:textSize="16sp"/>
+                    
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchBackgroundMusic"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        app:thumbTint="@color/button_background"
+                        app:trackTint="@color/primary_light"/>
+                </LinearLayout>
+                
+                <!-- Sound Effect Test Button -->
+                <Button
+                    android:id="@+id/buttonTestSound"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Test Sound Effects"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/button_background"
+                    android:padding="12dp"
+                    android:layout_marginTop="12dp"
+                    android:drawableStart="@android:drawable/ic_media_play"
+                    android:drawablePadding="12dp"
+                    android:gravity="start|center_vertical"
+                    android:elevation="2dp"/>
+            </LinearLayout>
+            
+            <!-- About Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="?attr/cardBackgroundColor"
+                android:padding="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="About"
+                    android:textColor="?attr/android:textColorPrimary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pokémon Battle App v1.0"
+                    android:textColor="?attr/android:textColorSecondary"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp"/>
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=" 2025 Pokémon Battle App"
+                    android:textColor="?attr/android:textColorHint"
+                    android:textSize="12sp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

@@ -4,13 +4,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="8dp"
-    android:background="#e3e3e3">
+    android:background="@color/battle_ui_background">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Choose a move"
-        android:textColor="#444444"
+        android:textColor="@color/battle_ui_text_primary"
         android:textSize="16sp"
         android:textStyle="bold"
         android:gravity="center"
@@ -28,8 +28,8 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="Move 1"
-            android:textColor="#ffffff"
-            android:backgroundTint="#4d94ff"
+            android:textColor="@color/battle_button_text"
+            android:backgroundTint="@color/battle_button_move"
             android:layout_margin="2dp"/>
 
         <Button
@@ -39,8 +39,8 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="Move 2"
-            android:textColor="#ffffff"
-            android:backgroundTint="#4d94ff"
+            android:textColor="@color/battle_button_text"
+            android:backgroundTint="@color/battle_button_move"
             android:layout_margin="2dp"/>
 
     </LinearLayout>
@@ -58,8 +58,8 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:textColor="#ffffff"
-            android:backgroundTint="#4d94ff"
+            android:textColor="@color/battle_button_text"
+            android:backgroundTint="@color/battle_button_move"
             android:layout_margin="2dp">
         </Button>
 
@@ -70,8 +70,8 @@
             android:layout_weight="1"
             android:text="Move 4"
             android:layout_height="wrap_content"
-            android:textColor="#ffffff"
-            android:backgroundTint="#4d94ff"
+            android:textColor="@color/battle_button_text"
+            android:backgroundTint="@color/battle_button_move"
             android:layout_margin="2dp">
         </Button>
 
@@ -83,8 +83,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Form Change"
-        android:textColor="#ffffff"
-        android:backgroundTint="#ff5252"
+        android:textColor="@color/battle_button_text"
+        android:backgroundTint="@color/battle_button_fight"
         android:layout_margin="2dp"/>
 
     <!-- Added weight to push the back button to the bottom -->
@@ -98,8 +98,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Back"
-        android:textColor="#444444"
-        android:backgroundTint="#d9d9d9"
+        android:textColor="@color/battle_button_back_text"
+        android:backgroundTint="@color/battle_button_back"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
         android:padding="12dp"

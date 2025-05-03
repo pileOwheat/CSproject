@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/menuSidebar"
     android:layout_width="280dp"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#B0333333"
+    android:background="?attr/android:windowBackground"
     android:padding="16dp"
     android:layout_gravity="start"
     android:elevation="8dp">
@@ -14,25 +15,43 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#80555555"
-        android:padding="12dp"
-        android:layout_marginBottom="16dp">
+        android:background="?attr/cardBackgroundColor"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp"
+        android:elevation="4dp">
         
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/icon"
+            app:tint="?attr/android:textColorPrimary"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"/>
+            
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Pokémon Battle"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:textStyle="bold"/>
+            android:textColor="?attr/android:textColorPrimary"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"/>
+            
+        <View
+            android:layout_width="100dp"
+            android:layout_height="2dp"
+            android:background="@color/accent"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"/>
             
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Menu Options"
-            android:textColor="#E0E0E0"
-            android:textSize="16sp"
-            android:layout_marginTop="4dp"/>
+            android:textColor="?attr/android:textColorSecondary"
+            android:layout_gravity="center_horizontal"
+            android:textSize="16sp"/>
     </LinearLayout>
 
     <!-- Menu Buttons -->
@@ -40,54 +59,109 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#80444444"
-        android:padding="8dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="20dp">
         
         <Button
             android:id="@+id/buttonBackToMain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Back to Main Menu"
-            android:textColor="#FFFFFF"
-            android:background="#4D6F8CAA"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:drawablePadding="8dp"
-            android:gravity="start|center_vertical"/>
+            android:textColor="@color/white"
+            android:backgroundTint="@color/button_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:drawableStart="@android:drawable/ic_menu_revert"
+            android:drawablePadding="12dp"
+            android:gravity="start|center_vertical"
+            android:elevation="2dp"/>
 
         <Button
             android:id="@+id/buttonSettings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Settings"
-            android:textColor="#FFFFFF"
-            android:background="#4D6F8CAA"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:drawablePadding="8dp"
-            android:gravity="start|center_vertical"/>
+            android:textColor="@color/white"
+            android:backgroundTint="@color/button_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:drawableStart="@android:drawable/ic_menu_preferences"
+            android:drawablePadding="12dp"
+            android:gravity="start|center_vertical"
+            android:elevation="2dp"/>
 
         <Button
             android:id="@+id/buttonCloseMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Close Menu"
-            android:textColor="#FFFFFF"
-            android:background="#4D6F8CAA"
-            android:padding="12dp"
-            android:drawablePadding="8dp"
-            android:gravity="start|center_vertical"/>
+            android:textColor="@color/white"
+            android:backgroundTint="@color/button_background"
+            android:padding="16dp"
+            android:drawableStart="@android:drawable/ic_menu_close_clear_cancel"
+            android:drawablePadding="12dp"
+            android:gravity="start|center_vertical"
+            android:elevation="2dp"/>
+    </LinearLayout>
+    
+    <!-- Pokémon Info Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="?attr/cardBackgroundColor"
+        android:padding="12dp"
+        android:layout_marginBottom="20dp"
+        android:elevation="2dp">
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Battle Information"
+            android:textColor="?attr/android:textColorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+            
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Random Battle Format"
+            android:textColor="?attr/android:textColorSecondary"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp"/>
+
     </LinearLayout>
     
     <!-- Pokémon Showdown Credit -->
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Backgrounds from Pokémon Showdown"
-        android:textColor="#CCCCCC"
-        android:textSize="12sp"
+        android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginTop="16dp"/>
+        android:layout_weight="1">
+        
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/dividerColor"
+            android:layout_marginBottom="12dp"/>
+            
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Backgrounds from Pokémon Showdown"
+            android:textColor="?attr/android:textColorTertiary"
+            android:textSize="12sp"
+            android:gravity="center"/>
+            
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=" 2025 Pokémon Battle App"
+            android:textColor="?attr/android:textColorHint"
+            android:textSize="10sp"
+            android:gravity="center"
+            android:layout_marginTop="4dp"/>
+    </LinearLayout>
 
 </LinearLayout>

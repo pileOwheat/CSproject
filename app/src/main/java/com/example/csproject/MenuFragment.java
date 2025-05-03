@@ -45,7 +45,20 @@ public class MenuFragment extends Fragment {
         });
 
         btnSettings.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Settings coming soon!", Toast.LENGTH_SHORT).show();
+            // Close this menu and open settings fragment
+            closeMenuWithAnimation(() -> {
+                BattleActivity.isMenuOpen = false;
+                
+                // Launch the settings fragment
+                if (getActivity() != null) {
+                    SettingsFragment settingsFragment = new SettingsFragment();
+                    getActivity().getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.menuFragmentContainer, settingsFragment)
+                            .addToBackStack(null)
+                            .commit();
+                    BattleActivity.isMenuOpen = true;
+                }
+            });
         });
 
         btnClose.setOnClickListener(v -> {

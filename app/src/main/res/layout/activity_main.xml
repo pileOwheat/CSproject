@@ -5,27 +5,130 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/android:colorBackground"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/buttonStartBattle"
-        android:layout_width="wrap_content"
+    <!-- Title Section -->
+    <LinearLayout
+        android:id="@+id/titleSection"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Start Battle"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:background="?attr/cardBackgroundColor"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <Button
-        android:id="@+id/buttonJoinSpectator"
-        android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pokémon Battle"
+            android:textColor="?attr/android:textColorPrimary"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:shadowColor="#CCCCCC"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="2"/>
+
+        <View
+            android:layout_width="120dp"
+            android:layout_height="2dp"
+            android:background="@color/accent"
+            android:layout_marginTop="8dp"/>
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Random Battle Simulator"
+            android:textColor="?attr/android:textColorSecondary"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+    <!-- Main Content Area -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:background="?attr/android:windowBackground"
+        app:layout_constraintTop_toBottomOf="@id/titleSection"
+        app:layout_constraintBottom_toTopOf="@id/creditsSection"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/icon"
+            app:tint="?attr/android:textColorPrimary"
+            android:layout_marginBottom="32dp"/>
+
+        <Button
+            android:id="@+id/buttonStartBattle"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:text="Start Battle"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:backgroundTint="@color/button_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="4dp"/>
+
+        <Button
+            android:id="@+id/buttonJoinSpectator"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:text="Join Random Battle (Spectator)"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/button_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="4dp"/>
+            
+        <Button
+            android:id="@+id/buttonSettings"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/button_background"
+            android:padding="16dp"
+            android:elevation="4dp"/>
+    </LinearLayout>
+
+    <!-- Credits Section -->
+    <LinearLayout
+        android:id="@+id/creditsSection"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
-        android:text="Join Random Battle (Spectator)"
-        app:layout_constraintBottom_toTopOf="@+id/buttonStartBattle"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="?attr/cardBackgroundColor"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Backgrounds from Pokémon Showdown"
+            android:textColor="?attr/android:textColorTertiary"
+            android:textSize="12sp"/>
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" 2025 Pokémon Battle App"
+            android:textColor="?attr/android:textColorHint"
+            android:textSize="10sp"
+            android:layout_marginTop="4dp"/>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

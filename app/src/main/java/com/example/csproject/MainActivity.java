@@ -1,11 +1,14 @@
 package com.example.csproject;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -15,11 +18,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply theme before setting content view
+        applyThemeFromPreferences();
+        
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
         Button startButton = findViewById(R.id.buttonStartBattle);//start battle
+        Button joinSpectatorButton = findViewById(R.id.buttonJoinSpectator);
+        Button settingsButton = findViewById(R.id.buttonSettings);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -34,15 +42,41 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //intent for join spectator button
-        Button joinSpectatorButton = findViewById(R.id.buttonJoinSpectator);
         joinSpectatorButton.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, BattleActivity.class);
             intent.putExtra("spectator_mode", true); // flag that will be checked in battleActivity
             startActivity(intent);
         });
-
-
-
-
+        
+        // Settings button
+        if (settingsButton != null) {
+            settingsButton.setOnClickListener(v -> {
+                openSettingsFragment();
+            });
+        }
+    }
+    
+    /**
+     * Applies the theme based on saved preferences
+     */
+    private void applyThemeFromPreferences() {
+        SharedPreferences sharedPreferences = getSharedPreferences("PokemonBattlePrefs", Context.MODE_PRIVATE);
+        boolean isDarkMode = sharedPreferences.getBoolean("dark_mode", true);
+        
+        // Set the night mode without recreating the activity
+        // This is only used during initial activity creation
+        AppCompatDelegate.setDefaultNightMode(
+            isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+    }
+    
+    /**
+     * Opens the settings fragment
+     */
+    private void openSettingsFragment() {
+        SettingsFragment settingsFragment = new SettingsFragment();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.main, settingsFragment)
+                .addToBackStack(null)
+                .commit();
     }
 }

@@ -138,6 +138,20 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
         PokemonBattleData pokemon = activePokemon.get(position);
         if (pokemon != null) {
             pokemon.setFainted();
+
+            // Play the faint sound effect and Pokémon cry
+            SoundManager soundManager = SoundManager.getInstance(activity);
+            
+            // Play the fainted sound effect
+            soundManager.playSoundEffect(SoundManager.SFX_DEFEAT);
+            
+            // Play the Pokémon's cry by its name
+            String pokemonName = pokemon.getName();
+            if (pokemonName != null && !pokemonName.isEmpty()) {
+                soundManager.playPokemonCryByName(pokemonName);
+                Log.d(TAG, "Playing fainted cry for: " + pokemonName);
+            }
+
             updateUI();
         } else {
             Log.w(TAG, "Tried to faint unknown Pokemon at position: " + position);

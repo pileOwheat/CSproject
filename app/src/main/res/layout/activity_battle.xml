@@ -41,7 +41,7 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#80e3e3e3">  <!-- Semi-transparent background -->
+            android:background="@color/battle_top_bar">  <!-- Semi-transparent background -->
 
             <ImageButton
                 android:id="@+id/buttonOpenMenu"
@@ -51,7 +51,8 @@
                 android:layout_gravity="top|start"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Open Menu"
-                android:src="@android:drawable/ic_menu_sort_by_size" />
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                android:tint="@color/battle_ui_text_primary" />
                 
             <TextView
                 android:layout_width="wrap_content"
@@ -60,7 +61,7 @@
                 android:text="Random Battle"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#444444"
+                android:textColor="@color/battle_ui_text_primary"
                 android:padding="8dp"/>
         </FrameLayout>
 
@@ -89,14 +90,14 @@
                         android:layout_width="180dp"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:background="#B3FFFFFF">
+                        android:background="@color/battle_ui_background">
 
                         <TextView
                             android:id="@+id/opponentName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Opponent"
-                            android:textColor="#444444"
+                            android:textColor="@color/battle_ui_text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:paddingStart="8dp"
@@ -108,7 +109,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Opponent's Pokemon Lv.50"
-                            android:textColor="#666666"
+                            android:textColor="@color/battle_ui_text_secondary"
                             android:textSize="14sp"
                             android:paddingStart="8dp"
                             android:paddingEnd="8dp" />
@@ -126,7 +127,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="HP"
-                                android:textColor="#666666"
+                                android:textColor="@color/battle_ui_text_secondary"
                                 android:textSize="12sp"
                                 android:layout_marginEnd="8dp"/>
 
@@ -162,14 +163,14 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:layout_marginStart="8dp"
-                        android:background="#B3FFFFFF">
+                        android:background="@color/battle_ui_background">
 
                         <TextView
                             android:id="@+id/playerName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="You"
-                            android:textColor="#444444"
+                            android:textColor="@color/battle_ui_text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:paddingStart="8dp"
@@ -181,7 +182,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Your Pokemon Lv.50"
-                            android:textColor="#666666"
+                            android:textColor="@color/battle_ui_text_secondary"
                             android:textSize="14sp"
                             android:paddingStart="8dp"
                             android:paddingEnd="8dp" />
@@ -199,7 +200,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="HP"
-                                android:textColor="#666666"
+                                android:textColor="@color/battle_ui_text_secondary"
                                 android:textSize="12sp"
                                 android:layout_marginEnd="8dp"/>
 
@@ -221,39 +222,35 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
-            
-            <!-- Battle log with Showdown-like styling -->
+
+            <!-- Battle Log -->
             <ScrollView
                 android:id="@+id/scrollLogContainer"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#B0f8f8f8"
-                android:layout_margin="8dp">
+                android:padding="8dp"
+                android:background="@color/battle_ui_background">
 
                 <TextView
                     android:id="@+id/battleLog"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="16dp"
+                    android:textColor="@color/battle_ui_text_primary"
                     android:textSize="14sp"
-                    android:textColor="#333333"
                     android:lineSpacingExtra="4dp"
-                    android:fontFamily="sans-serif"/>
+                    android:text="" />
             </ScrollView>
         </FrameLayout>
 
-        <!-- Controls shown at bottom -->
+        <!-- Controls Container - FIXED HEIGHT -->
         <FrameLayout
             android:id="@+id/controlsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#B0e3e3e3"
-            android:padding="8dp">
+            android:minHeight="160dp"
+            android:background="@color/battle_ui_background">
+            <!-- Control layouts will be inflated here -->
         </FrameLayout>
-
     </LinearLayout>
 
     <!-- Overlay for menu fragment - side panel -->

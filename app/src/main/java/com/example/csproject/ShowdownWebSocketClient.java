@@ -1,5 +1,6 @@
 package com.example.csproject;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -32,6 +33,7 @@ public class ShowdownWebSocketClient extends WebSocketListener {
     private final MessageCallback callback;
     private BattleDataCallback battleDataCallback;
     private WebSocket webSocket;
+    private Context context; // Added context field
 
     private String battleRoomId;
     private JSONObject lastRequestJson;
@@ -49,7 +51,8 @@ public class ShowdownWebSocketClient extends WebSocketListener {
     private boolean waitingForOpponent = false;
     private boolean waitingMessageSent = false;
 
-    public ShowdownWebSocketClient(MessageCallback callback) {
+    public ShowdownWebSocketClient(Context context, MessageCallback callback) {
+        this.context = context; // Store the context
         this.callback = callback;
         this.client = new OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build();
     }
@@ -242,6 +245,9 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                                     String pokemonName = identParts[1].trim();
                                     
                                     Log.d("ShowdownClient", "Switch: " + position + " " + pokemonName + " " + details + " " + condition);
+                                    
+                                    // Play the Pokémon's cry when it's switched in
+                                    SoundManager.getInstance(context).playPokemonCryByName(pokemonName);
                                     
                                     // Update battle manager with the switched Pokémon
                                     if (battleDataCallback != null) {
