@@ -302,7 +302,12 @@ public class SoundManager {
      * Play a sound effect
      */
     public void playSoundEffect(int soundId) {
-        if (!soundEffectsEnabled) return;
+        if (!soundEffectsEnabled) {
+            Log.d(TAG, "Sound effects disabled, not playing sound: " + soundId);
+            return;
+        }
+        
+        Log.d(TAG, "Playing sound effect: " + soundId);
         
         // First try to play from local resources
         int soundResourceId = soundMap.get(soundId, -1);
@@ -311,7 +316,7 @@ public class SoundManager {
             // soundPool.play(soundResourceId, volume, volume, 1, 0, 1.0f);
             
             // For now, just log that we would play the sound
-            Log.d(TAG, "Playing sound effect: " + soundId + " at volume " + volume);
+            Log.d(TAG, "Playing sound effect from local resources: " + soundId + " at volume " + volume);
             
             return;
         }
@@ -320,6 +325,7 @@ public class SoundManager {
         String showdownSfxName = SHOWDOWN_SFX_MAP.get(soundId);
         if (showdownSfxName != null) {
             String url = SHOWDOWN_SFX_URL + showdownSfxName + ".mp3";
+            Log.d(TAG, "Streaming sound effect from URL: " + url);
             streamSoundWithoutToast(url);
         } else {
             Log.e(TAG, "Unknown sound effect ID: " + soundId);
@@ -344,7 +350,10 @@ public class SoundManager {
      * @param pokemonName The name of the Pokémon
      */
     public void playPokemonCryByName(String pokemonName) {
-        if (!soundEffectsEnabled) return;
+        if (!soundEffectsEnabled) {
+            Log.d(TAG, "Sound effects disabled, not playing cry for: " + pokemonName);
+            return;
+        }
         
         if (pokemonName != null && !pokemonName.isEmpty()) {
             // Format the Pokémon name for the URL
@@ -356,8 +365,8 @@ public class SoundManager {
                     .replace(":", "");
                     
             String url = SHOWDOWN_CRY_URL + formattedName + ".mp3";
-            streamSoundWithoutToast(url);
             Log.d(TAG, "Playing cry for: " + pokemonName + " from URL: " + url);
+            streamSoundWithoutToast(url);
         }
     }
     
@@ -506,6 +515,8 @@ public class SoundManager {
      */
     private void streamSoundWithoutToast(String url) {
         try {
+            Log.d(TAG, "Streaming sound from URL: " + url);
+            
             // Create a new media player for this sound
             MediaPlayer player = new MediaPlayer();
             player.setAudioAttributes(
