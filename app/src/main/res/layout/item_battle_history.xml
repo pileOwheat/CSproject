@@ -9,7 +9,8 @@
     android:layout_marginTop="8dp"
     android:layout_marginBottom="8dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="?attr/cardBackgroundColor">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -23,7 +24,7 @@
             android:text="vs. Opponent"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#333333"
+            android:textColor="?android:attr/textColorPrimary"
             app:layout_constraintEnd_toStartOf="@+id/textViewOutcome"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -45,7 +46,7 @@
             android:layout_marginTop="8dp"
             android:text="Date: 01/01/2023"
             android:textSize="14sp"
-            android:textColor="#666666"
+            android:textColor="?android:attr/textColorSecondary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textViewOpponent" />
@@ -57,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="View Details"
-            android:textColor="@android:color/holo_blue_dark"
+            android:textColor="?android:attr/textColorPrimary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textViewDate" />
 
@@ -77,7 +78,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#E0E0E0"
+                android:background="?attr/dividerColor"
                 android:layout_marginBottom="16dp"/>
 
             <!-- Player Team Section -->
@@ -86,7 +87,7 @@
                 android:layout_height="wrap_content"
                 android:text="Your Team"
                 android:textStyle="bold"
-                android:textColor="#333333"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="16sp"/>
 
             <TextView
@@ -95,26 +96,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="16dp"
-                android:textColor="#666666"
+                android:textColor="?android:attr/textColorSecondary"
                 android:text="Player team information"/>
-
-            <!-- Opponent Team Section -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Opponent's Team"
-                android:textStyle="bold"
-                android:textColor="#333333"
-                android:textSize="16sp"/>
-
-            <TextView
-                android:id="@+id/textViewOpponentTeam"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="16dp"
-                android:textColor="#666666"
-                android:text="Opponent team information"/>
 
             <!-- Battle Log Section -->
             <TextView
@@ -122,7 +105,7 @@
                 android:layout_height="wrap_content"
                 android:text="Battle Log"
                 android:textStyle="bold"
-                android:textColor="#333333"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="16sp"/>
 
             <ScrollView
@@ -131,7 +114,7 @@
                 android:maxHeight="200dp"
                 android:scrollbars="vertical"
                 android:fadeScrollbars="false"
-                android:background="#F5F5F5"
+                android:background="?attr/cardBackgroundColor"
                 android:padding="8dp">
 
                 <TextView
@@ -139,7 +122,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textColor="#444444"
+                    android:textColor="?android:attr/textColorSecondary"
                     android:textSize="14sp"
                     android:fontFamily="monospace"
                     android:text="Battle log will appear here"/>

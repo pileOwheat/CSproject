@@ -62,20 +62,6 @@
         android:layout_marginBottom="20dp">
         
         <Button
-            android:id="@+id/buttonBackToMain"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Back to Main Menu"
-            android:textColor="@color/white"
-            android:backgroundTint="@color/button_background"
-            android:padding="16dp"
-            android:layout_marginBottom="12dp"
-            android:drawableStart="@android:drawable/ic_menu_revert"
-            android:drawablePadding="12dp"
-            android:gravity="start|center_vertical"
-            android:elevation="2dp"/>
-
-        <Button
             android:id="@+id/buttonSettings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -85,6 +71,20 @@
             android:padding="16dp"
             android:layout_marginBottom="12dp"
             android:drawableStart="@android:drawable/ic_menu_preferences"
+            android:drawablePadding="12dp"
+            android:gravity="start|center_vertical"
+            android:elevation="2dp"/>
+
+        <Button
+            android:id="@+id/buttonForfeit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Forfeit Battle"
+            android:textColor="@color/white"
+            android:backgroundTint="#D32F2F"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:drawableStart="@android:drawable/ic_menu_delete"
             android:drawablePadding="12dp"
             android:gravity="start|center_vertical"
             android:elevation="2dp"/>

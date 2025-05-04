@@ -592,16 +592,42 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                                 
                                 // Check if the player won or lost
                                 String outcome;
+                                String opponentName;
+                                
                                 if (winner.contains("Guest")) {
+                                    // Player won
                                     outcome = "win";
-                                    callback.onMessageReceived("🏆 You won the battle!");
+                                    
+                                    // When player wins, we need to get the opponent name
+                                    // Try to get it from the battleRoomId
+                                    opponentName = "Opponent"; // Default fallback
+                                    
+                                    if (battleRoomId != null && battleRoomId.contains("-")) {
+                                        // Battle room format is typically: battle-gen9randombattle-username1-username2
+                                        String[] roomParts = battleRoomId.split("-");
+                                        
+                                        // Skip "battle" and "gen9randombattle" parts
+                                        for (int i = 2; i < roomParts.length; i++) {
+                                            if (!roomParts[i].equalsIgnoreCase("battle") && 
+                                                !roomParts[i].contains("Guest") && 
+                                                !roomParts[i].contains("randombattle") &&
+                                                !roomParts[i].isEmpty()) {
+                                                opponentName = roomParts[i];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    callback.onMessageReceived("🏆 You won the battle against " + opponentName + "!");
                                 } else {
+                                    // Player lost
                                     outcome = "loss";
-                                    callback.onMessageReceived("😔 You lost the battle!");
+                                    opponentName = winner; // Winner is the opponent
+                                    callback.onMessageReceived("😔 You lost the battle against " + opponentName + "!");
                                 }
                                 
                                 // Save battle history to Firebase if user is signed in
-                                saveBattleHistory(winner, outcome);
+                                saveBattleHistory(opponentName, outcome);
                             }
                             break;
                         case "tie":

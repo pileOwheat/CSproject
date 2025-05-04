@@ -63,23 +63,8 @@
                 android:textStyle="bold"
                 android:textColor="@color/battle_ui_text_primary"
                 android:padding="8dp"/>
+
                 
-            <!-- Forfeit Button -->
-            <Button
-                android:id="@+id/buttonForfeit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="top|end"
-                android:layout_margin="8dp"
-                android:text="Forfeit"
-                android:textColor="@android:color/white"
-                android:background="@android:color/holo_red_light"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp"
-                android:textSize="14sp"
-                android:contentDescription="Forfeit Battle" />
         </FrameLayout>
 
         <!-- BATTLE UI (HP bars, names) - FIXED HEIGHT -->

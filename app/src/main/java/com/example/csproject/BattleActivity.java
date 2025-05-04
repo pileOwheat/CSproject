@@ -126,7 +126,6 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
         setupMoveButtons();
         setupSwitchButtons();
         setupMenuButton();
-        setupForfeitButton();
         initWebSocket();
         
         // Set battle mode in SoundManager
@@ -1231,6 +1230,14 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
         }
         return "";
     }
+    
+    /**
+     * Get the WebSocket client
+     * @return The ShowdownWebSocketClient instance
+     */
+    public ShowdownWebSocketClient getSocketClient() {
+        return socketClient;
+    }
 
     /**
      * Updates the Pokémon information display based on waiting state
@@ -1311,35 +1318,7 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
      * Sets up the forfeit button with confirmation dialog
      */
     private void setupForfeitButton() {
-        Button forfeitButton = findViewById(R.id.buttonForfeit);
-        forfeitButton.setOnClickListener(v -> {
-            // Show confirmation dialog
-            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-            builder.setTitle("Forfeit Battle");
-            builder.setMessage("Are you sure you want to forfeit this battle? This will count as a loss.");
-            builder.setPositiveButton("Forfeit", (dialog, which) -> {
-                // Send forfeit command to the server
-                if (socketClient != null) {
-                    // Add to battle log
-                    battleLog.append("You forfeited the battle.\n");
-                    scrollLog.post(() -> scrollLog.fullScroll(ScrollView.FOCUS_DOWN));
-                    
-                    // Send forfeit command
-                    socketClient.send("/forfeit");
-                    
-                    // Short delay before navigating back
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        // Navigate back to main menu
-                        navigateToMainMenu();
-                    }, 1500); // 1.5 second delay to show the forfeit message
-                } else {
-                    // If not connected, just go back to main menu
-                    Toast.makeText(this, "Connection lost. Returning to main menu.", Toast.LENGTH_SHORT).show();
-                    navigateToMainMenu();
-                }
-            });
-            builder.setNegativeButton("Cancel", null);
-            builder.show();
-        });
+        // The forfeit button has been removed from the layout and moved to the menu
+        // This method is kept for backward compatibility but doesn't do anything
     }
 }

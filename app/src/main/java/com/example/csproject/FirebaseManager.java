@@ -477,4 +477,14 @@ public class FirebaseManager {
             }
         });
     }
+    
+    /**
+     * Delete all user data from Firebase Database
+     * @param userId The ID of the user whose data should be deleted
+     * @return Task indicating success or failure
+     */
+    public Task<Void> deleteUserData(String userId) {
+        DatabaseReference userRef = mDatabase.child("users").child(userId);
+        return userRef.removeValue();
+    }
 }

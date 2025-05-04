@@ -3,8 +3,10 @@ package com.example.csproject;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.InputType;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +14,7 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
@@ -25,6 +28,8 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.csproject.MainActivity;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseUser;
 
 public class SettingsFragment extends Fragment {
@@ -266,31 +271,74 @@ public class SettingsFragment extends Fragment {
     private void deleteUserAccount() {
         FirebaseUser user = firebaseManager.getCurrentUser();
         if (user != null) {
-            // Delete the user account
-            user.delete()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            // Clear preferences
-                            SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.putBoolean("guest_mode", false);
-                            editor.apply();
-                            
-                            // Show toast
-                            Toast.makeText(requireContext(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
-                            
-                            // Redirect to login screen
-                            Intent intent = new Intent(requireActivity(), LoginActivity.class);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(intent);
-                            requireActivity().finish();
-                        } else {
-                            // If delete fails, show error message
-                            Toast.makeText(requireContext(), 
-                                    "Failed to delete account: " + task.getException().getMessage(), 
-                                    Toast.LENGTH_LONG).show();
-                        }
+            // First delete the user's data from the database
+            String userId = user.getUid();
+            firebaseManager.deleteUserData(userId)
+                    .addOnSuccessListener(aVoid -> {
+                        // After data is deleted, delete the account
+                        // Re-authenticate user before deletion (required by Firebase)
+                        showReauthenticationDialog(user);
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(requireContext(), "Failed to delete user data: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     });
         }
+    }
+
+    private void showReauthenticationDialog(FirebaseUser user) {
+        // Create dialog with password field
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Confirm Your Identity");
+        builder.setMessage("This operation is sensitive and requires recent authentication. Please enter your password to continue.");
+
+        // Set up the input
+        final EditText input = new EditText(requireContext());
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        input.setHint("Password");
+        builder.setView(input);
+
+        // Set up the buttons
+        builder.setPositiveButton("Confirm", (dialog, which) -> {
+            String password = input.getText().toString();
+            if (password.isEmpty()) {
+                Toast.makeText(requireContext(), "Password cannot be empty", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // Re-authenticate with password
+            AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), password);
+            user.reauthenticate(credential)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            // Now delete the user account
+                            user.delete()
+                                    .addOnCompleteListener(deleteTask -> {
+                                        if (deleteTask.isSuccessful()) {
+                                            // Clear preferences
+                                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                                            editor.putBoolean("guest_mode", false);
+                                            editor.apply();
+                                            
+                                            // Show toast
+                                            Toast.makeText(requireContext(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+                                            
+                                            // Redirect to login screen
+                                            Intent intent = new Intent(requireContext(), LoginActivity.class);
+                                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                            startActivity(intent);
+                                            requireActivity().finish();
+                                        } else {
+                                            Toast.makeText(requireContext(), "Failed to delete account: " + deleteTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                        }
+                                    });
+                        } else {
+                            Toast.makeText(requireContext(), "Authentication failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
     }
     
     private void saveSettings() {

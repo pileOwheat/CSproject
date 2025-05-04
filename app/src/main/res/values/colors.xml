@@ -19,6 +19,15 @@
     <color name="text_tertiary_light">#666666</color>
     <color name="divider_light">#CCCCCC</color>
     
+    <!-- Dark theme colors -->
+    <color name="background_dark">#121212</color>
+    <color name="background_secondary_dark">#1E1E1E</color>
+    <color name="card_background_dark">#2D2D2D</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_dark">#BBBBBB</color>
+    <color name="text_tertiary_dark">#999999</color>
+    <color name="divider_dark">#444444</color>
+    
     <!-- Button colors -->
     <color name="button_background">#607D8B</color>
     <color name="button_text">#FFFFFF</color>

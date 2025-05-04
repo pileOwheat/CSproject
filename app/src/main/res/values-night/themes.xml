@@ -7,24 +7,24 @@
         <item name="colorAccent">@color/accent</item>
         
         <!-- Background colors -->
-        <item name="android:colorBackground">@color/background_light</item>
-        <item name="android:windowBackground">@color/background_secondary_light</item>
+        <item name="android:colorBackground">@color/background_dark</item>
+        <item name="android:windowBackground">@color/background_secondary_dark</item>
         
         <!-- Card and panel backgrounds -->
-        <item name="cardBackgroundColor">@color/card_background_light</item>
-        <item name="panelBackgroundColor">@color/card_background_light</item>
+        <item name="cardBackgroundColor">@color/card_background_dark</item>
+        <item name="panelBackgroundColor">@color/card_background_dark</item>
         
         <!-- Text colors -->
-        <item name="android:textColorPrimary">@color/text_primary_light</item>
-        <item name="android:textColorSecondary">@color/text_secondary_light</item>
-        <item name="android:textColorTertiary">@color/text_tertiary_light</item>
-        <item name="android:textColorHint">@color/text_tertiary_light</item>
+        <item name="android:textColorPrimary">@color/text_primary_dark</item>
+        <item name="android:textColorSecondary">@color/text_secondary_dark</item>
+        <item name="android:textColorTertiary">@color/text_tertiary_dark</item>
+        <item name="android:textColorHint">@color/text_tertiary_dark</item>
         
         <!-- Button colors -->
         <item name="buttonBackgroundColor">@color/button_background</item>
         <item name="buttonTextColor">@color/button_text</item>
         
         <!-- Divider colors -->
-        <item name="dividerColor">@color/divider_light</item>
+        <item name="dividerColor">@color/divider_dark</item>
     </style>
 </resources>

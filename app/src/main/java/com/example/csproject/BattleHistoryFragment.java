@@ -188,9 +188,6 @@ public class BattleHistoryFragment extends Fragment {
                 // Set player team
                 holder.textViewPlayerTeam.setText(battleHistory.getPlayerTeam());
                 
-                // Set opponent team
-                holder.textViewOpponentTeam.setText(battleHistory.getOpponentTeam());
-                
                 // Set battle log
                 holder.textViewBattleLog.setText(battleHistory.getBattleLog());
             }
@@ -218,7 +215,7 @@ public class BattleHistoryFragment extends Fragment {
 
         public static class ViewHolder extends RecyclerView.ViewHolder {
             TextView textViewOpponent, textViewOutcome, textViewDate;
-            TextView textViewPlayerTeam, textViewOpponentTeam, textViewBattleLog;
+            TextView textViewPlayerTeam, textViewBattleLog;
             View buttonViewDetails, detailsContainer;
 
             public ViewHolder(@NonNull View itemView) {
@@ -231,7 +228,6 @@ public class BattleHistoryFragment extends Fragment {
                 // Detail view elements
                 detailsContainer = itemView.findViewById(R.id.detailsContainer);
                 textViewPlayerTeam = itemView.findViewById(R.id.textViewPlayerTeam);
-                textViewOpponentTeam = itemView.findViewById(R.id.textViewOpponentTeam);
                 textViewBattleLog = itemView.findViewById(R.id.textViewBattleLog);
             }
         }
