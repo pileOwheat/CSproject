@@ -25,6 +25,7 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.csproject.MainActivity;
+import com.google.firebase.auth.FirebaseUser;
 
 public class SettingsFragment extends Fragment {
     private LinearLayout settingsContainer;
@@ -35,9 +36,14 @@ public class SettingsFragment extends Fragment {
     private TextView textVolumeValue;
     private Button buttonTestSound;
     private ImageView btnBackFromSettings;
+    private LinearLayout accountSettingsLayout;
+    private TextView textViewAccountStatus;
+    private Button buttonLogout;
+    private Button buttonDeleteAccount;
     
     private SharedPreferences sharedPreferences;
     private SoundManager soundManager;
+    private FirebaseManager firebaseManager;
     
     private boolean isDarkMode;
     private boolean isSoundEffectsEnabled;
@@ -62,9 +68,14 @@ public class SettingsFragment extends Fragment {
         textVolumeValue = view.findViewById(R.id.textVolumeValue);
         buttonTestSound = view.findViewById(R.id.buttonTestSound);
         btnBackFromSettings = view.findViewById(R.id.btnBackFromSettings);
+        accountSettingsLayout = view.findViewById(R.id.accountSettingsLayout);
+        textViewAccountStatus = view.findViewById(R.id.textViewAccountStatus);
+        buttonLogout = view.findViewById(R.id.buttonLogout);
+        buttonDeleteAccount = view.findViewById(R.id.buttonDeleteAccount);
         
-        // Initialize sound manager
+        // Initialize sound manager and firebase manager
         soundManager = SoundManager.getInstance(requireContext());
+        firebaseManager = FirebaseManager.getInstance();
         
         // Apply entrance animation
         Animation slideIn = AnimationUtils.loadAnimation(getContext(), R.anim.slide_in_right);
@@ -75,6 +86,9 @@ public class SettingsFragment extends Fragment {
         
         // Set up listeners
         setupListeners();
+        
+        // Setup account section
+        setupAccountSection();
         
         return view;
     }
@@ -94,6 +108,37 @@ public class SettingsFragment extends Fragment {
         switchBackgroundMusic.setChecked(isBackgroundMusicEnabled);
         seekBarVolume.setProgress(soundVolume);
         textVolumeValue.setText(soundVolume + "%");
+    }
+    
+    private void setupAccountSection() {
+        // Check if user is signed in
+        boolean isUserSignedIn = firebaseManager.isUserSignedIn();
+        boolean isGuestMode = sharedPreferences.getBoolean("guest_mode", false);
+        
+        if (isUserSignedIn) {
+            FirebaseUser currentUser = firebaseManager.getCurrentUser();
+            if (currentUser != null && currentUser.getEmail() != null) {
+                textViewAccountStatus.setText("Signed in as: " + currentUser.getEmail());
+            } else {
+                textViewAccountStatus.setText("Signed in");
+            }
+            
+            // Show account settings
+            accountSettingsLayout.setVisibility(View.VISIBLE);
+            buttonLogout.setVisibility(View.VISIBLE);
+            buttonDeleteAccount.setVisibility(View.VISIBLE);
+        } else if (isGuestMode) {
+            textViewAccountStatus.setText("Guest Mode");
+            
+            // Show only logout button for guest mode
+            accountSettingsLayout.setVisibility(View.VISIBLE);
+            buttonLogout.setVisibility(View.VISIBLE);
+            buttonDeleteAccount.setVisibility(View.GONE);
+        } else {
+            // User is not signed in and not in guest mode
+            // This shouldn't happen normally, but handle it just in case
+            accountSettingsLayout.setVisibility(View.GONE);
+        }
     }
     
     private void setupListeners() {
@@ -161,6 +206,91 @@ public class SettingsFragment extends Fragment {
         btnBackFromSettings.setOnClickListener(v -> {
             closeSettingsWithAnimation();
         });
+        
+        // Logout button listener
+        buttonLogout.setOnClickListener(v -> {
+            showLogoutConfirmationDialog();
+        });
+        
+        // Delete account button listener
+        buttonDeleteAccount.setOnClickListener(v -> {
+            showDeleteAccountConfirmationDialog();
+        });
+    }
+    
+    private void showLogoutConfirmationDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Log Out")
+                .setMessage("Are you sure you want to log out?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    // Sign out user
+                    firebaseManager.signOut();
+                    
+                    // Clear guest mode flag
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putBoolean("guest_mode", false);
+                    editor.apply();
+                    
+                    // Show toast
+                    Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+                    
+                    // Redirect to login screen
+                    Intent intent = new Intent(requireActivity(), LoginActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    requireActivity().finish();
+                })
+                .setNegativeButton("No", null)
+                .show();
+    }
+    
+    private void showDeleteAccountConfirmationDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Account")
+                .setMessage("Are you sure you want to delete your account? This action cannot be undone.")
+                .setPositiveButton("Yes, Delete My Account", (dialog, which) -> {
+                    // Show a second confirmation dialog
+                    new AlertDialog.Builder(requireContext())
+                            .setTitle("Confirm Deletion")
+                            .setMessage("This will permanently delete your account and all associated data. Are you absolutely sure?")
+                            .setPositiveButton("Yes, I'm Sure", (dialog2, which2) -> {
+                                deleteUserAccount();
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    
+    private void deleteUserAccount() {
+        FirebaseUser user = firebaseManager.getCurrentUser();
+        if (user != null) {
+            // Delete the user account
+            user.delete()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            // Clear preferences
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.putBoolean("guest_mode", false);
+                            editor.apply();
+                            
+                            // Show toast
+                            Toast.makeText(requireContext(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+                            
+                            // Redirect to login screen
+                            Intent intent = new Intent(requireActivity(), LoginActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                            requireActivity().finish();
+                        } else {
+                            // If delete fails, show error message
+                            Toast.makeText(requireContext(), 
+                                    "Failed to delete account: " + task.getException().getMessage(), 
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+        }
     }
     
     private void saveSettings() {
@@ -202,79 +332,50 @@ public class SettingsFragment extends Fragment {
         }
     }
     
-    private int getThemeColor(int attr) {
+    private int getThemeColor(int attribute) {
         TypedValue typedValue = new TypedValue();
-        requireContext().getTheme().resolveAttribute(attr, typedValue, true);
+        requireContext().getTheme().resolveAttribute(attribute, typedValue, true);
         return typedValue.data;
     }
     
-    private void closeSettingsWithAnimation() {
-        Animation slideOut = AnimationUtils.loadAnimation(getContext(), R.anim.slide_out_right);
-        slideOut.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                // Nothing to do
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                // Remove the fragment after the animation completes
-                if (isAdded()) {
-                    requireActivity().getSupportFragmentManager().beginTransaction()
-                            .remove(SettingsFragment.this)
-                            .commit();
-                    requireActivity().getSupportFragmentManager().popBackStack();
-                }
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-                // Nothing to do
-            }
-        });
-        
-        settingsContainer.startAnimation(slideOut);
-    }
-    
     private void showThemeChangeDialog() {
-        if (getActivity() != null) {
-            // Determine if we're in the main menu or not
-            boolean isInMainMenu = getActivity().getClass().getSimpleName().equals("MainActivity");
-            
-            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
-                .setTitle("Theme Settings Changed")
-                .setMessage("⚠️ IMPORTANT: You must return to the MAIN MENU for theme changes to take effect");
-                
-            if (isInMainMenu) {
-                // If already in main menu, offer to restart
-                builder.setPositiveButton("Restart Now", (dialog, which) -> {
-                    // Apply theme change
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Theme Changed")
+                .setMessage("The theme has been changed. Would you like to apply it now?")
+                .setPositiveButton("Apply Now", (dialog, which) -> {
+                    // Apply theme change immediately
                     applyDarkModeSetting();
                     
-                    // Restart the activity
-                    Intent intent = getActivity().getIntent();
-                    getActivity().finish();
+                    // Restart the main activity to apply theme properly
+                    Intent intent = new Intent(requireActivity(), MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
-                });
-                builder.setNegativeButton("Later", (dialog, which) -> {
-                    // Do nothing, dismiss dialog
-                });
-            } else {
-                // If not in main menu, offer to return to main menu
-                builder.setPositiveButton("Return to Main Menu", (dialog, which) -> {
-                    // Return to main menu
-                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(intent);
-                    getActivity().finish();
-                });
-                builder.setNegativeButton("Stay Here", (dialog, which) -> {
-                    // Do nothing, dismiss dialog
-                });
+                    requireActivity().finish();
+                })
+                .setNegativeButton("Later", null)
+                .show();
+    }
+    
+    private void closeSettingsWithAnimation() {
+        // Save settings before closing
+        saveSettings();
+        
+        // Apply exit animation
+        Animation slideOut = AnimationUtils.loadAnimation(getContext(), R.anim.slide_out_right);
+        settingsContainer.startAnimation(slideOut);
+        
+        // Wait for animation to finish before popping the fragment
+        new Handler().postDelayed(() -> {
+            if (isAdded()) {
+                requireActivity().getSupportFragmentManager().popBackStack();
             }
-            
-            builder.setCancelable(false) // Force user to make a choice
-                   .show();
-        }
+        }, slideOut.getDuration());
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Save settings when fragment is paused
+        saveSettings();
     }
 }

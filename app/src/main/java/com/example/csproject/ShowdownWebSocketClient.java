@@ -1,6 +1,7 @@
 package com.example.csproject;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -590,183 +591,110 @@ public class ShowdownWebSocketClient extends WebSocketListener {
                                 String winner = parts[2];
                                 
                                 // Check if the player won or lost
+                                String outcome;
                                 if (winner.contains("Guest")) {
+                                    outcome = "win";
                                     callback.onMessageReceived("🏆 You won the battle!");
                                 } else {
+                                    outcome = "loss";
                                     callback.onMessageReceived("😔 You lost the battle!");
                                 }
+                                
+                                // Save battle history to Firebase if user is signed in
+                                saveBattleHistory(winner, outcome);
                             }
                             break;
                         case "tie":
                             // Format: |tie
                             callback.onMessageReceived("🤝 The battle ended in a tie!");
-                            break;
-                        case "-status":
-                            // Format: |-status|POKEMON_IDENT|STATUS
-                            if (parts.length >= 4) {
-                                String pokemonIdent = parts[2];
-                                String status = parts[3];
-                                
-                                // Extract position and name
-                                String[] identParts = pokemonIdent.split(":");
-                                if (identParts.length >= 2) {
-                                    String position = identParts[0].trim();
-                                    String pokemonName = identParts[1].trim();
-                                    
-                                    // Check if this is the player's Pokémon or the opponent's
-                                    String playerNum = position.substring(1, 2);
-                                    boolean isPlayer = playerNum.equals(String.valueOf(mySlot));
-                                    String pokemonDisplay = isPlayer ? pokemonName : "The opposing " + pokemonName;
-                                    
-                                    // Create a message for the battle log based on the status
-                                    if (callback != null) {
-                                        switch (status) {
-                                            case "brn":
-                                                callback.onMessageReceived("🔥 " + pokemonDisplay + " was burned!");
-                                                break;
-                                            case "par":
-                                                callback.onMessageReceived("⚡ " + pokemonDisplay + " was paralyzed! It may be unable to move!");
-                                                break;
-                                            case "slp":
-                                                callback.onMessageReceived("💤 " + pokemonDisplay + " fell asleep!");
-                                                break;
-                                            case "frz":
-                                                callback.onMessageReceived("❄️ " + pokemonDisplay + " was frozen solid!");
-                                                break;
-                                            case "psn":
-                                                callback.onMessageReceived("☠️ " + pokemonDisplay + " was poisoned!");
-                                                break;
-                                            case "tox":
-                                                callback.onMessageReceived("☣️ " + pokemonDisplay + " was badly poisoned!");
-                                                break;
-                                            default:
-                                                callback.onMessageReceived("⚠️ " + pokemonDisplay + " was inflicted with " + status + "!");
-                                                break;
-                                        }
-                                    }
-                                }
-                            }
-                            break;
-                        case "-curestatus":
-                            // Format: |-curestatus|POKEMON_IDENT|STATUS
-                            if (parts.length >= 4) {
-                                String pokemonIdent = parts[2];
-                                String status = parts[3];
-                                
-                                // Extract position and name
-                                String[] identParts = pokemonIdent.split(":");
-                                if (identParts.length >= 2) {
-                                    String position = identParts[0].trim();
-                                    String pokemonName = identParts[1].trim();
-                                    
-                                    // Check if this is the player's Pokémon or the opponent's
-                                    String playerNum = position.substring(1, 2);
-                                    boolean isPlayer = playerNum.equals(String.valueOf(mySlot));
-                                    String pokemonDisplay = isPlayer ? pokemonName : "The opposing " + pokemonName;
-                                    
-                                    // Create a message for the battle log based on the cured status
-                                    if (callback != null) {
-                                        switch (status) {
-                                            case "brn":
-                                                callback.onMessageReceived("🔥 " + pokemonDisplay + "'s burn was healed!");
-                                                break;
-                                            case "par":
-                                                callback.onMessageReceived("⚡ " + pokemonDisplay + " was cured of paralysis!");
-                                                break;
-                                            case "slp":
-                                                callback.onMessageReceived("💤 " + pokemonDisplay + " woke up!");
-                                                break;
-                                            case "frz":
-                                                callback.onMessageReceived("❄️ " + pokemonDisplay + " thawed out!");
-                                                break;
-                                            case "psn":
-                                            case "tox":
-                                                callback.onMessageReceived("☠️ " + pokemonDisplay + " was cured of its poisoning!");
-                                                break;
-                                            default:
-                                                callback.onMessageReceived("⚠️ " + pokemonDisplay + " was cured of " + status + "!");
-                                                break;
-                                        }
-                                    }
-                                }
-                            }
-                            break;
-                        case "-weather":
-                            // Format: |-weather|WEATHER
-                            if (parts.length >= 3) {
-                                String weather = parts[2];
-                                
-                                // Create a message for the battle log based on the weather
-                                if (callback != null) {
-                                    switch (weather) {
-                                        case "RainDance":
-                                            callback.onMessageReceived("It started to rain!");
-                                            break;
-                                        case "Sandstorm":
-                                            callback.onMessageReceived("A sandstorm kicked up!");
-                                            break;
-                                        case "SunnyDay":
-                                            callback.onMessageReceived("The sunlight turned harsh!");
-                                            break;
-                                        case "Hail":
-                                            callback.onMessageReceived("It started to hail!");
-                                            break;
-                                        case "none":
-                                            callback.onMessageReceived("The weather cleared up!");
-                                            break;
-                                        default:
-                                            callback.onMessageReceived("The weather became " + weather + "!");
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        case "-fieldstart":
-                            // Format: |-fieldstart|FIELD_EFFECT
-                            if (parts.length >= 3) {
-                                String fieldEffect = parts[2];
-                                
-                                // Create a message for the battle log based on the field effect
-                                if (callback != null) {
-                                    switch (fieldEffect) {
-                                        case "Trick Room":
-                                            callback.onMessageReceived("The dimensions were twisted!");
-                                            break;
-                                        case "Electric Terrain":
-                                            callback.onMessageReceived("An electric current ran across the battlefield!");
-                                            break;
-                                        case "Grassy Terrain":
-                                            callback.onMessageReceived("Grass grew to cover the battlefield!");
-                                            break;
-                                        case "Misty Terrain":
-                                            callback.onMessageReceived("Mist swirled around the battlefield!");
-                                            break;
-                                        case "Psychic Terrain":
-                                            callback.onMessageReceived("The battlefield got weird!");
-                                            break;
-                                        default:
-                                            callback.onMessageReceived(fieldEffect + " started!");
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        case "-fieldend":
-                            // Format: |-fieldend|FIELD_EFFECT
-                            if (parts.length >= 3) {
-                                String fieldEffect = parts[2];
-                                
-                                // Create a message for the battle log based on the field effect ending
-                                if (callback != null) {
-                                    callback.onMessageReceived("The " + fieldEffect + " ended!");
-                                }
-                            }
+                            
+                            // Save tie battle to Firebase
+                            saveBattleHistory("Tie", "tie");
                             break;
                     }
                 }
             }
         } catch (Exception e) {
             Log.e("ShowdownClient", "Error processing battle message", e);
+        }
+    }
+
+    /**
+     * Save battle history to Firebase
+     * @param opponent Name of the opponent
+     * @param outcome Result of the battle (win, loss, or tie)
+     */
+    private void saveBattleHistory(String opponent, String outcome) {
+        // Get battle log from the callback if it's a BattleActivity
+        String battleLog = "";
+        String playerTeam = "";
+        String opponentTeam = "";
+        
+        if (context instanceof BattleActivity) {
+            BattleActivity battleActivity = (BattleActivity) context;
+            battleLog = battleActivity.getBattleLog();
+            
+            // Get team information if available
+            if (lastRequestJson != null) {
+                try {
+                    // Extract player's team
+                    if (lastRequestJson.has("side") && lastRequestJson.getJSONObject("side").has("pokemon")) {
+                        JSONArray pokemon = lastRequestJson.getJSONObject("side").getJSONArray("pokemon");
+                        StringBuilder teamBuilder = new StringBuilder();
+                        for (int i = 0; i < pokemon.length(); i++) {
+                            JSONObject poke = pokemon.getJSONObject(i);
+                            if (poke.has("details")) {
+                                teamBuilder.append(poke.getString("details"));
+                                if (i < pokemon.length() - 1) {
+                                    teamBuilder.append(", ");
+                                }
+                            }
+                        }
+                        playerTeam = teamBuilder.toString();
+                    }
+                    
+                    // For opponent's team, we might not have complete information
+                    // We'll use what we know from the battle
+                    opponentTeam = "Unknown opponent team";
+                } catch (JSONException e) {
+                    Log.e("ShowdownClient", "Error extracting team information", e);
+                }
+            }
+        }
+        
+        // Save to Firebase
+        FirebaseManager firebaseManager = FirebaseManager.getInstance();
+        
+        // Check if user is signed in before saving
+        if (firebaseManager.isUserSignedIn()) {
+            Log.d("ShowdownClient", "User is signed in with ID: " + firebaseManager.getCurrentUser().getUid());
+        } else {
+            Log.d("ShowdownClient", "User is NOT signed in! Battle history will not be saved.");
+        }
+        
+        boolean saved = firebaseManager.saveBattleHistory(
+                opponent.replace("Guest", "Trainer"), // Clean up opponent name
+                outcome,
+                battleLog,
+                playerTeam,
+                opponentTeam
+        );
+        
+        if (saved) {
+            Log.d("ShowdownClient", "Battle history saved to Firebase");
+        } else {
+            Log.d("ShowdownClient", "Battle history not saved (user not signed in or guest mode)");
+        }
+        
+        // Navigate back to main menu after saving battle history
+        if (context instanceof BattleActivity) {
+            BattleActivity battleActivity = (BattleActivity) context;
+            
+            // Add a small delay to ensure Firebase operation completes
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                Log.d("ShowdownClient", "Calling navigateToMainMenu on BattleActivity");
+                battleActivity.navigateToMainMenu();
+            }, 300);
         }
     }
 

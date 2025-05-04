@@ -88,6 +88,17 @@
             android:textColor="@color/white"
             android:backgroundTint="@color/button_background"
             android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="4dp"/>
+            
+        <Button
+            android:id="@+id/buttonBattleHistory"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:text="Battle History"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/button_background"
+            android:padding="16dp"
             android:elevation="4dp"/>
     </LinearLayout>
 

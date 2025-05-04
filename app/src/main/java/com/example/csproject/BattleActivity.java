@@ -72,6 +72,9 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
     private boolean isFormChangeActive = false; // Whether form change is toggled on
     private String opponentSwitchInName = null;
 
+    // Flag to track if navigation to main menu is already in progress
+    private boolean isNavigatingToMainMenu = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Apply theme before super.onCreate
@@ -123,6 +126,7 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
         setupMoveButtons();
         setupSwitchButtons();
         setupMenuButton();
+        setupForfeitButton();
         initWebSocket();
         
         // Set battle mode in SoundManager
@@ -985,99 +989,40 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
     }
 
     /**
-     * Updates UI elements for theme changes without restarting the activity
-     * Called by SettingsFragment when dark mode is toggled
+     * Navigate back to the main menu after a battle is complete
+     * This method ensures we only navigate once even if called multiple times
      */
-    public void updateUIForThemeChange() {
-        // Apply the theme directly to the activity
-        getDelegate().setLocalNightMode(
-            AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-                ? AppCompatDelegate.MODE_NIGHT_YES
-                : AppCompatDelegate.MODE_NIGHT_NO
-        );
-        
-        // Force apply the theme
-        getDelegate().applyDayNight();
-        
-        // Refresh all views in the activity
-        refreshAllViews();
-    }
-    
-    /**
-     * Refreshes all views in the activity to apply the new theme
-     */
-    private void refreshAllViews() {
-        // Get the root view
-        ViewGroup root = (ViewGroup) getWindow().getDecorView().findViewById(android.R.id.content);
-        
-        // Recreate all views with the new theme
-        recreateView(root);
-        
-        // Refresh specific UI components
-        refreshBattleControls();
-        
-        // Force layout pass
-        root.requestLayout();
-    }
-    
-    /**
-     * Recursively recreates a view and all its children with the new theme
-     */
-    private void recreateView(View view) {
-        if (view == null) return;
-        
-        // Apply theme to this view
-        view.setBackgroundResource(android.R.color.transparent);
-        
-        // Force redraw
-        view.invalidate();
-        
-        // If this is a ViewGroup, apply to all children
-        if (view instanceof ViewGroup) {
-            ViewGroup viewGroup = (ViewGroup) view;
-            for (int i = 0; i < viewGroup.getChildCount(); i++) {
-                recreateView(viewGroup.getChildAt(i));
-            }
+    public void navigateToMainMenu() {
+        if (isNavigatingToMainMenu) {
+            Log.d(TAG, "Already navigating to main menu, ignoring duplicate request");
+            return;
         }
         
-        // Invalidate the parent view group
-        view.invalidate();
-    }
-    
-    /**
-     * Updates all buttons in the battle screen with the current theme colors
-     */
-    private void updateAllButtons() {
-        // Get button colors from theme
-        TypedValue typedValue = new TypedValue();
-        getTheme().resolveAttribute(R.attr.buttonBackgroundColor, typedValue, true);
-        int buttonBackground = typedValue.data;
+        isNavigatingToMainMenu = true;
+        Log.d(TAG, "Navigating to main menu from BattleActivity");
         
-        getTheme().resolveAttribute(R.attr.buttonTextColor, typedValue, true);
-        int buttonTextColor = typedValue.data;
-        
-        // Find all buttons in the layout and update their colors
-        ViewGroup rootView = findViewById(android.R.id.content);
-        updateButtonsRecursively(rootView, buttonBackground, buttonTextColor);
-    }
-    
-    /**
-     * Recursively updates all buttons in a view hierarchy
-     */
-    private void updateButtonsRecursively(ViewGroup viewGroup, int buttonBackground, int buttonTextColor) {
-        if (viewGroup == null) return;
-        
-        for (int i = 0; i < viewGroup.getChildCount(); i++) {
-            View child = viewGroup.getChildAt(i);
-            
-            if (child instanceof Button) {
-                Button button = (Button) child;
-                button.setBackgroundColor(buttonBackground);
-                button.setTextColor(buttonTextColor);
-            } else if (child instanceof ViewGroup) {
-                updateButtonsRecursively((ViewGroup) child, buttonBackground, buttonTextColor);
+        // Run on UI thread to ensure proper activity state
+        runOnUiThread(() -> {
+            try {
+                // Create an intent to start the MainActivity
+                android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
+                
+                // Add flags to clear the back stack and start a new task
+                intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | 
+                               android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                
+                // Start the main activity
+                startActivity(intent);
+                
+                // Finish this activity to remove it from the back stack
+                finish();
+                
+                Log.d(TAG, "Successfully started MainActivity and finished BattleActivity");
+            } catch (Exception e) {
+                Log.e(TAG, "Error navigating to main menu", e);
+                isNavigatingToMainMenu = false;
             }
-        }
+        });
     }
 
     @Override
@@ -1277,6 +1222,17 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
     }
 
     /**
+     * Get the current battle log text
+     * @return The battle log text
+     */
+    public String getBattleLog() {
+        if (battleLog != null) {
+            return battleLog.getText().toString();
+        }
+        return "";
+    }
+
+    /**
      * Updates the Pokémon information display based on waiting state
      * @param isWaiting true if waiting for opponent, false otherwise
      */
@@ -1349,5 +1305,41 @@ public class BattleActivity extends AppCompatActivity implements ShowdownWebSock
                 }
             }
         }
+    }
+
+    /**
+     * Sets up the forfeit button with confirmation dialog
+     */
+    private void setupForfeitButton() {
+        Button forfeitButton = findViewById(R.id.buttonForfeit);
+        forfeitButton.setOnClickListener(v -> {
+            // Show confirmation dialog
+            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+            builder.setTitle("Forfeit Battle");
+            builder.setMessage("Are you sure you want to forfeit this battle? This will count as a loss.");
+            builder.setPositiveButton("Forfeit", (dialog, which) -> {
+                // Send forfeit command to the server
+                if (socketClient != null) {
+                    // Add to battle log
+                    battleLog.append("You forfeited the battle.\n");
+                    scrollLog.post(() -> scrollLog.fullScroll(ScrollView.FOCUS_DOWN));
+                    
+                    // Send forfeit command
+                    socketClient.send("/forfeit");
+                    
+                    // Short delay before navigating back
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        // Navigate back to main menu
+                        navigateToMainMenu();
+                    }, 1500); // 1.5 second delay to show the forfeit message
+                } else {
+                    // If not connected, just go back to main menu
+                    Toast.makeText(this, "Connection lost. Returning to main menu.", Toast.LENGTH_SHORT).show();
+                    navigateToMainMenu();
+                }
+            });
+            builder.setNegativeButton("Cancel", null);
+            builder.show();
+        });
     }
 }
