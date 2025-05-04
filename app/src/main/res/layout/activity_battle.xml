@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/containerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    
+
     <!-- Battle Background Image - Positioned as the first child to cover the entire screen -->
     <ImageView
         android:id="@+id/battleBackground"
@@ -16,7 +17,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        
+
         <!-- Opponent Pokémon sprite - fixed position -->
         <ImageView
             android:id="@+id/opponentSprite"
@@ -26,7 +27,7 @@
             android:layout_marginTop="60dp"
             android:layout_marginEnd="20dp"
             android:contentDescription="Opponent's Pokémon" />
-            
+
         <!-- Player Pokémon sprite - fixed position -->
     </FrameLayout>
 
@@ -52,7 +53,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Open Menu"
                 android:src="@android:drawable/ic_menu_sort_by_size"
-                android:tint="@color/battle_ui_text_primary" />
+                app:tint="@color/battle_ui_text_primary" />
                 
             <TextView
                 android:layout_width="wrap_content"
