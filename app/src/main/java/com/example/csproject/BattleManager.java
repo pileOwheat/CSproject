@@ -138,7 +138,6 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
             if (isPlayerPokemon && oldHPPercentage > 20 && newHPPercentage <= 20) {
                 // Play low health sound when health becomes critical
                 SoundManager soundManager = SoundManager.getInstance(activity);
-                soundManager.playSoundEffect(SoundManager.SFX_NOT_EFFECTIVE);
             }
             
             updateUI(oldHPPercentage, position);
@@ -164,8 +163,7 @@ public class BattleManager implements ShowdownWebSocketClient.BattleDataCallback
                 
                 // Play faint sound effect
                 SoundManager soundManager = SoundManager.getInstance(activity);
-                soundManager.playSoundEffect(SoundManager.SFX_DEFEAT);
-                
+
                 // Play the Pokémon's cry by its name
                 String pokemonName = pokemon.getName();
                 if (pokemonName != null && !pokemonName.isEmpty()) {

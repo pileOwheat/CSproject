@@ -70,24 +70,16 @@ public class SoundManager {
     private static final String SHOWDOWN_SFX_URL = SHOWDOWN_AUDIO_BASE_URL + "sfx/";
     private static final String SHOWDOWN_CRY_URL = SHOWDOWN_AUDIO_BASE_URL + "cries/";
     
-    // Pokémon Showdown background music tracks
-    public static final String BGM_BATTLE = "battle-gen8";
-    public static final String BGM_BATTLE_XY = "battle-xy";
-    public static final String BGM_BATTLE_SM = "battle-sm";
-    public static final String BGM_BATTLE_DPPT = "battle-dppt";
-    public static final String BGM_BATTLE_RSE = "battle-rse";
-    public static final String BGM_BATTLE_GSC = "battle-gsc";
-    public static final String BGM_BATTLE_RBY = "battle-rby";
-    
+
+
     // Array of all available battle music tracks
     private static final String[] BATTLE_MUSIC_TRACKS = {
-        BGM_BATTLE,          // Gen 8 (Sword/Shield)
-        BGM_BATTLE_XY,       // X/Y
-        BGM_BATTLE_SM,       // Sun/Moon
-        BGM_BATTLE_DPPT,     // Diamond/Pearl/Platinum
-        BGM_BATTLE_RSE,      // Ruby/Sapphire/Emerald
-        BGM_BATTLE_GSC,      // Gold/Silver/Crystal
-        BGM_BATTLE_RBY,      // Red/Blue/Yellow
+        "battle-gen8",          // Gen 8 (Sword/Shield)
+        "battle-xy",       // X/Y
+        "battle-dppt",       // Sun/Moon
+        "battle-sm",     // Diamond/Pearl/Platinum
+        "battle-rse",      // Ruby/Sapphire/Emerald
+        "battle-gsc",      // Gold/Silver/Crystal"battle-rby",      // Red/Blue/Yellow
         "battle-bw",         // Black/White
         "battle-bw2",        // Black 2/White 2
         "battle-colosseum",  // Pokémon Colosseum
@@ -139,9 +131,7 @@ public class SoundManager {
         
         // Load settings
         loadSettings();
-        
-        // Load basic sound effects (for UI interactions)
-        loadBasicSoundEffects();
+
     }
     
     /**
@@ -282,70 +272,6 @@ public class SoundManager {
     }
     
     /**
-     * Load basic sound effects from resources
-     */
-    private void loadBasicSoundEffects() {
-        try {
-            // In a real implementation, we would load actual sound files
-            // For now, we'll simulate sound loading since we only have placeholder text files
-            // soundMap.put(SFX_CLICK, soundPool.load(context, R.raw.click_sound, 1));
-            
-            // Simulate successful loading of sound
-            soundMap.put(SFX_CLICK, 1);
-            Log.d(TAG, "Simulated loading of click sound effect");
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading sound effects: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Play a sound effect
-     */
-    public void playSoundEffect(int soundId) {
-        if (!soundEffectsEnabled) {
-            Log.d(TAG, "Sound effects disabled, not playing sound: " + soundId);
-            return;
-        }
-        
-        Log.d(TAG, "Playing sound effect: " + soundId);
-        
-        // First try to play from local resources
-        int soundResourceId = soundMap.get(soundId, -1);
-        if (soundResourceId != -1) {
-            // In a real implementation, we would play the actual sound
-            // soundPool.play(soundResourceId, volume, volume, 1, 0, 1.0f);
-            
-            // For now, just log that we would play the sound
-            Log.d(TAG, "Playing sound effect from local resources: " + soundId + " at volume " + volume);
-            
-            return;
-        }
-        
-        // If not available locally, stream from Pokémon Showdown API
-        String showdownSfxName = SHOWDOWN_SFX_MAP.get(soundId);
-        if (showdownSfxName != null) {
-            String url = SHOWDOWN_SFX_URL + showdownSfxName + ".mp3";
-            Log.d(TAG, "Streaming sound effect from URL: " + url);
-            streamSoundWithoutToast(url);
-        } else {
-            Log.e(TAG, "Unknown sound effect ID: " + soundId);
-        }
-    }
-    
-    /**
-     * Play a Pokémon cry
-     */
-    public void playPokemonCry(int pokemonId) {
-        if (!soundEffectsEnabled) return;
-        
-        String pokemonName = getPokemonNameFromId(pokemonId);
-        if (pokemonName != null) {
-            String url = SHOWDOWN_CRY_URL + pokemonName.toLowerCase() + ".mp3";
-            streamSoundWithoutToast(url);
-        }
-    }
-    
-    /**
      * Play a Pokémon cry by name
      * @param pokemonName The name of the Pokémon
      */
@@ -367,23 +293,6 @@ public class SoundManager {
             String url = SHOWDOWN_CRY_URL + formattedName + ".mp3";
             Log.d(TAG, "Playing cry for: " + pokemonName + " from URL: " + url);
             streamSoundWithoutToast(url);
-        }
-    }
-    
-    /**
-     * Get the Pokémon name from its ID
-     */
-    private String getPokemonNameFromId(int pokemonId) {
-        // This is a simplified implementation
-        // In a real app, you would have a complete mapping of Pokémon IDs to names
-        switch (pokemonId) {
-            case 1: return "bulbasaur";
-            case 4: return "charmander";
-            case 7: return "squirtle";
-            case 25: return "pikachu";
-            case 133: return "eevee";
-            // Add more mappings as needed
-            default: return "pikachu"; // Default to Pikachu if unknown
         }
     }
     
@@ -553,79 +462,32 @@ public class SoundManager {
     }
     
     /**
-     * Stream a sound from a URL
-     */
-    private void streamSound(String url, String description) {
-        try {
-            // Create a new media player for this sound
-            MediaPlayer player = new MediaPlayer();
-            player.setAudioAttributes(
-                    new AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-            );
-            
-            // Set the data source to the URL
-            player.setDataSource(url);
-            
-            // Set volume based on user settings
-            player.setVolume(volume, volume);
-            
-            // Prepare the player asynchronously
-            player.prepareAsync();
-            
-            // Start playing when prepared
-            player.setOnPreparedListener(MediaPlayer::start);
-            
-            // Release resources when playback is complete
-            player.setOnCompletionListener(MediaPlayer::release);
-            
-            // Handle errors
-            player.setOnErrorListener((mp, what, extra) -> {
-                Log.e(TAG, "Error streaming sound: " + what + ", " + extra);
-                mp.release();
-                return true;
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Error streaming sound: " + e.getMessage());
-        }
-    }
-    
-    /**
      * Try playing a different random track if the current one fails - simplified version
      */
     private void trySimpleRandomTrack() {
         try {
             // Select a different random track
             String[] simpleTracks = {
-                // Original tracks
-                "colosseum-miror-b",
-                "battle-gen8",
-                "battle-xy",
-                "battle-sm",
-                "battle-dppt",
-                "battle-rse",
-                
-                // Additional tracks
-                "bw-rival",
-                "bw-subway-trainer",
-                "bw-trainer",
-                "bw2-homika-dogars",
-                "bw2-kanto-gym-leader",
-                "bw2-rival",
-                "dpp-rival",
-                "dpp-trainer",
-                "hgss-johto-trainer",
-                "hgss-kanto-trainer",
-                "oras-rival",
-                "oras-trainer",
-                "sm-rival",
-                "sm-trainer",
-                "spl-elite4",
-                "xd-miror-b",
-                "xy-rival",
-                "xy-trainer"
+                    "battle-gen8",          // Gen 8 (Sword/Shield)
+                    "battle-xy",       // X/Y
+                    "battle-dppt",       // Sun/Moon
+                    "battle-sm",     // Diamond/Pearl/Platinum
+                    "battle-rse",      // Ruby/Sapphire/Emerald
+                    "battle-gsc",      // Gold/Silver/Crystal"battle-rby",      // Red/Blue/Yellow
+                    "battle-bw",         // Black/White
+                    "battle-bw2",        // Black 2/White 2
+                    "battle-colosseum",  // Pokémon Colosseum
+                    "battle-dpp-wild",   // Diamond/Pearl/Platinum Wild Battle
+                    "battle-oras",       // Omega Ruby/Alpha Sapphire
+                    "battle-swsh-gym-leader", // Sword/Shield Gym Leader
+                    "battle-swsh-wild",  // Sword/Shield Wild Battle
+                    "battle-usum-legend", // Ultra Sun/Ultra Moon Legendary Battle
+                    "battle-usum-ultra-beast", // Ultra Sun/Ultra Moon Ultra Beast Battle
+                    "battle-xd",         // Pokémon XD: Gale of Darkness
+                    "battle-champion-rse", // Ruby/Sapphire/Emerald Champion Battle
+                    "battle-frontier-brain", // Frontier Brain Battle
+                    "battle-gym-leader-gen1", // Gen 1 Gym Leader
+                    "battle-gym-leader-gen3" // Gen 3 Gym Leader
             };
             
             int randomIndex = (int) (Math.random() * simpleTracks.length);
@@ -668,44 +530,7 @@ public class SoundManager {
             mediaPlayer = null;
         }
     }
-    
-    /**
-     * Reset the background music if it's having issues
-     */
-    private void resetBackgroundMusic() {
-        if (isResettingMusic) return;
-        
-        isResettingMusic = true;
-        
-        try {
-            // Save the current position and track
-            String currentTrack = this.currentMusicTrack;
-            
-            // Stop and release the current player
-            if (mediaPlayer != null) {
-                if (mediaPlayer.isPlaying()) {
-                    mediaPlayer.stop();
-                }
-                mediaPlayer.release();
-                mediaPlayer = null;
-            }
-            
-            // Create a new player and restart the music
-            if (currentTrack != null && backgroundMusicEnabled) {
-                Log.d(TAG, "Resetting background music: " + currentTrack);
-                playBackgroundMusic(currentTrack);
-            } else {
-                // If we don't have a track, try playing a random one
-                playBattleMusic();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error resetting background music: " + e.getMessage());
-            // Try a completely new track
-            playBattleMusic();
-        } finally {
-            isResettingMusic = false;
-        }
-    }
+
 
     /**
      * Manually force music to play or pause based on current settings

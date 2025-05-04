@@ -134,11 +134,6 @@ public class SettingsFragment extends Fragment {
                 // Apply volume change immediately
                 float volumeLevel = progress / 100.0f;
                 soundManager.setVolume(volumeLevel);
-                
-                // Play a test sound when adjusting volume
-                if (fromUser && isSoundEffectsEnabled && progress % 10 == 0) {
-                    soundManager.playSoundEffect(SoundManager.SFX_CLICK);
-                }
             }
 
             @Override
@@ -156,7 +151,7 @@ public class SettingsFragment extends Fragment {
         buttonTestSound.setOnClickListener(v -> {
             if (isSoundEffectsEnabled) {
                 // Play Pikachu's cry immediately
-                soundManager.playPokemonCry(25);
+                soundManager.playPokemonCryByName("pikachu");
             } else {
                 Toast.makeText(requireContext(), "Sound effects are disabled. Please enable them first.", Toast.LENGTH_SHORT).show();
             }
@@ -281,30 +276,5 @@ public class SettingsFragment extends Fragment {
             builder.setCancelable(false) // Force user to make a choice
                    .show();
         }
-    }
-    
-    /**
-     * Play a sequence of different sound effects to demonstrate the sound system
-     */
-    private void playTestSoundSequence() {
-        // First play a click sound
-        soundManager.playSoundEffect(SoundManager.SFX_CLICK);
-        
-        // Then play other sounds with delays between them
-        new Handler().postDelayed(() -> {
-            // Play battle start sound
-            soundManager.playSoundEffect(SoundManager.SFX_BATTLE_START);
-            
-            // Play attack sound after a delay
-            new Handler().postDelayed(() -> {
-                soundManager.playSoundEffect(SoundManager.SFX_ATTACK);
-                
-                // Play a Pokémon cry after a delay
-                new Handler().postDelayed(() -> {
-                    // Play Pikachu's cry (Pokémon #25)
-                    soundManager.playPokemonCry(25);
-                }, 1000);
-            }, 1000);
-        }, 1000);
     }
 }
